@@ -749,7 +749,7 @@ set_default_conf(void)
 	ConfigFileEntry.max_monitor = 60;
 	ConfigFileEntry.nick_delay = 1800;	/* 15 minutes */
 	ConfigFileEntry.target_change = YES;
-	ConfigFileEntry.collision_fnc = NO;
+	ConfigFileEntry.collision_fnc = YES;
 	ConfigFileEntry.anti_spam_exit_message_time = 0;
 	ConfigFileEntry.ts_warn_delta = TS_WARN_DELTA_DEFAULT;
 	ConfigFileEntry.ts_max_delta = TS_MAX_DELTA_DEFAULT;
@@ -764,7 +764,7 @@ set_default_conf(void)
 	ConfigFileEntry.stats_k_oper_only = 1;	/* masked */
 	ConfigFileEntry.stats_i_oper_only = 1;	/* masked */
 	ConfigFileEntry.stats_P_oper_only = NO;
-	ConfigFileEntry.stats_c_oper_only = NO;
+	ConfigFileEntry.stats_c_oper_only = YES;
 	ConfigFileEntry.stats_y_oper_only = NO;
 	ConfigFileEntry.stats_h_oper_only = NO;
 	ConfigFileEntry.map_oper_only = NO;

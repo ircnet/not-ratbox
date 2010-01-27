@@ -298,7 +298,7 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 			successful_join_count++;
 
 		/* In case the channel was just created, reset all modes. */
-		if (flags && *chptr->chname != '!')
+		if (chptr && flags && *chptr->chname != '!')
 			kill_channel_modes(chptr);
 
 		/* IRCNet splitmode behaviour */

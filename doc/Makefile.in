@@ -21,7 +21,7 @@ localstatedir	= @localstatedir@
 moduledir	= @moduledir@
 automoduledir	= @moduledir@/autoload
 
-CONFS		= example.conf example.efnet.conf
+CONFS		= example.conf example.efnet.conf example.ircnet.conf sch.conf
 
 install-mkdirs:
 	-@if test ! -d $(DESTDIR)$(confdir); then \

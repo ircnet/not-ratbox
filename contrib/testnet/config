@@ -1,6 +1,6 @@
 # define paths to your daemons
 
-rb=../../../ircd-ratbox-ircnet/ircd
+rb=../../ircd
 in=../../../irc2.11.2p2/x86_64-unknown-linux-gnu/ircd
 
 # name used for oper
