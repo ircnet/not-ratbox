@@ -198,6 +198,8 @@ ms_mode(struct Client *client_p, struct Client *source_p, int parc, const char *
 		return 0;
 	}
 
+	if (*chptr->chname == '+') return 0;
+
 	set_channel_mode(client_p, source_p, chptr, find_channel_membership(chptr, source_p), parc - 2, parv + 2);
 
 	return 0;
@@ -229,8 +231,10 @@ ms_tmode(struct Client *client_p, struct Client *source_p, int parc, const char 
 	if(chptr->channelts && atol(parv[1]) > chptr->channelts)
 		return 0;
 
+
 	if(IsServer(source_p))
 	{
+		if (*chptr->chname == '+') return 0;
 		set_channel_mode(client_p, source_p, chptr, NULL, parc - 3, parv + 3);
 	}
 	else

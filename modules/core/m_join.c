@@ -934,6 +934,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 					     modebuf, parabuf);
 	}
 
+
 	if(!joins)
 	{
 		/* this just triggers chandelay */
@@ -952,6 +953,11 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 	*(ptr_uid - 1) = '\0';
 
 	sendto_server(client_p->from, chptr, CAP_TS6, CAP_211, "%s", buf_uid);
+
+	/* Don't send modes to + channels ever */
+	if (*chptr->chname == '+')
+		return 0;
+
 #ifdef COMPAT_211
 	sjoin_211(source_p, client_p, chptr, buf_uid + mlen_uid);
 	/* set the modes */
