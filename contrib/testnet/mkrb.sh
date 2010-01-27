@@ -36,7 +36,7 @@ for i in $3; do
 	if [ ! -z "$port" ]; then
 		echo "  >>> Adding connect to $host:$port (mask:$mask)"
 		echo "port = $port;" >> $fn
-		echo "flags = autoconn;" >> $fn
+		echo "flags = autoconn, compat211;" >> $fn
 	fi
 	if [ ! -z "$mask" ]; then
 		echo "mask=\"$mask\";" >> $fn
