@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-. config
+. ./config
 
 chmod +x *.sh
 

@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-. config
+. ./config
 
 echo "[+] Creating irc2.11.* instance $1:$2"
 
