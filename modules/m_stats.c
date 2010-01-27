@@ -1194,6 +1194,7 @@ stats_memory(struct Client *source_p)
 	int channel_bans = 0;
 	int channel_except = 0;
 	int channel_invex = 0;
+	int channel_reop = 0;
 
 	size_t wwu = 0;		/* whowas users */
 	int class_count = 0;	/* classes */
@@ -1207,6 +1208,7 @@ stats_memory(struct Client *source_p)
 	size_t channel_ban_memory = 0;
 	size_t channel_except_memory = 0;
 	size_t channel_invex_memory = 0;
+	size_t channel_reop_memory = 0;
 
 	size_t away_memory = 0;	/* memory used by aways */
 	size_t wwm = 0;		/* whowas array memory used */
@@ -1292,6 +1294,13 @@ stats_memory(struct Client *source_p)
 
 			channel_invex_memory += (sizeof(rb_dlink_node) + sizeof(struct Ban));
 		}
+		RB_DLINK_FOREACH(dlink, chptr->reoplist.head)
+		{
+			actualBan = dlink->data;
+			channel_reop++;
+
+			channel_reop_memory += (sizeof(rb_dlink_node) + sizeof(struct Ban));
+		}
 	}
 
 	/* count up all classes */
@@ -1333,6 +1342,9 @@ stats_memory(struct Client *source_p)
 
 	sendto_one_numeric(source_p, RPL_STATSDEBUG,
 			   "z :Invex %u(%zu)", channel_invex, channel_invex_memory);
+
+	sendto_one_numeric(source_p, RPL_STATSDEBUG,
+			   "z :Reop %u(%zu)", channel_reop, channel_reop_memory);
 
 	sendto_one_numeric(source_p, RPL_STATSDEBUG,
 			   "z :Channel members %u(%zu) invite %u(%zu)",
