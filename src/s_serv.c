@@ -654,38 +654,41 @@ serv_connect_callback(rb_fde_t *F, int status, void *data)
 	if(!EmptyString(server_p->spasswd))
 	{
 #ifdef COMPAT_211
-		sendto_one(client_p, "PASS %s " IRCNET_FAKESTRING "%s%s",
-		   server_p->spasswd, ServerConfCompressed(server_p) && zlib_ok ? "Z" : "",
-					ServerConfTb(server_p) ? "T" : "");
-		if (ServerConfMask(server_p, me.name) != me.name && !ConfigServerHide.hidden) {
-			sendto_one(client_p, "SERVER %s 1 %s :[%s]%s", ServerConfMask(server_p, me.name), me.id, me.name,
-				(me.info[0]) ? (me.info) : "IRCers United");
-		} else {
-			sendto_one(client_p, "SERVER %s 1 %s :%s", ServerConfMask(server_p, me.name), me.id,
-				(me.info[0]) ? (me.info) : "IRCers United");
-		}
-#else
-		sendto_one(client_p, "PASS %s TS %d :%s", server_p->spasswd, TS_CURRENT, me.id);
+		if (ServerConfCompat211(server_p))
+		{
+			sendto_one(client_p, "PASS %s " IRCNET_FAKESTRING "%s%s",
+			   server_p->spasswd, ServerConfCompressed(server_p) && zlib_ok ? "Z" : "",
+						ServerConfTb(server_p) ? "T" : "");
+			if (ServerConfMask(server_p, me.name) != me.name && !ConfigServerHide.hidden) {
+				sendto_one(client_p, "SERVER %s 1 %s :[%s]%s", ServerConfMask(server_p, me.name), me.id, me.name,
+					(me.info[0]) ? (me.info) : "IRCers United");
+			} else {
+				sendto_one(client_p, "SERVER %s 1 %s :%s", ServerConfMask(server_p, me.name), me.id,
+					(me.info[0]) ? (me.info) : "IRCers United");
+			}
+		} else
 #endif
+		sendto_one(client_p, "PASS %s TS %d :%s", server_p->spasswd, TS_CURRENT, me.id);
 	}
 
-	/* pass my info to the new server */
-#ifndef COMPAT_211
-	send_capabilities(client_p, default_server_capabs
+
+
+#ifdef COMPAT_211
+	if (!ServerConfCompat211(server_p))
+#endif
+	{
+		/* pass my info to the new server */
+		send_capabilities(client_p, default_server_capabs
 			  | (ServerConfCompressed(server_p) && zlib_ok ? CAP_ZIP : 0)
 			  | (ServerConfTb(server_p) ? CAP_TB : 0));
-#endif
-
-
-#ifndef COMPAT_211
-	if (ServerConfMask(server_p, me.name) != me.name && !ConfigServerHide.hidden) {
-		sendto_one(client_p, "SERVER %s 1 :[%s]%s", ServerConfMask(server_p, me.name), me.name,
-			   me.info);
-	} else {
-		sendto_one(client_p, "SERVER %s 1 :%s", ServerConfMask(server_p, me.name),
-			   me.info);
+		if (ServerConfMask(server_p, me.name) != me.name && !ConfigServerHide.hidden) {
+			sendto_one(client_p, "SERVER %s 1 :[%s]%s", ServerConfMask(server_p, me.name), me.name,
+				   me.info);
+		} else {
+			sendto_one(client_p, "SERVER %s 1 :%s", ServerConfMask(server_p, me.name),
+				   me.info);
+		}
 	}
-#endif
 	/* 
 	 * If we've been marked dead because a send failed, just exit
 	 * here now and save everyone the trouble of us ever existing.
