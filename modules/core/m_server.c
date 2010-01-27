@@ -70,7 +70,11 @@ struct Message smask_msgtab = {
 };
 #endif
 
-mapi_clist_av2 server_clist[] = { &server_msgtab, &sid_msgtab, &smask_msgtab, NULL };
+mapi_clist_av2 server_clist[] = { &server_msgtab, &sid_msgtab,
+#ifdef COMPAT_211
+ &smask_msgtab,
+#endif
+ NULL };
 
 DECLARE_MODULE_AV2(server, NULL, NULL, server_clist, NULL, NULL, "$Revision$");
 
