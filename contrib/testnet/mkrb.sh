@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-. config
+. ./config
 
 echo "[+] Creating ratbox instance $1:$2"
 

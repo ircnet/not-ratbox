@@ -1,7 +1,8 @@
-# define paths to your daemons
+# copy this file to config and edit it
 
-rb=/home/sd/nrb/rbtest/bin/ircd
-in=/usr/local/sbin/ircd
+# define paths to your daemons
+rb=../../ircd
+in=../../../irc2.11.2p2/x86_64-unknown-linux-gnu/ircd
 
 # name used for oper
 OPERNAME="sd"
