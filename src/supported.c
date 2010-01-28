@@ -297,4 +297,5 @@ init_isupport(void)
 	add_isupport("MONITOR", isupport_intptr, &ConfigFileEntry.max_monitor);
 	add_isupport("FNC", isupport_string, "");
 	add_isupport("TARGMAX", isupport_targmax, NULL);
+	add_isupport("WHOX", isupport_string, "");
 }
