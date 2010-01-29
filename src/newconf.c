@@ -162,7 +162,6 @@ static struct mode_table flag_table[] = {
 	{"xline",		OPER_XLINE		},
 	{"resv",		OPER_RESV		},
 	{"operwall",		OPER_OPERWALL		},
-	{"oper_spy",		OPER_SPY		},
 	{"hidden_oper",		OPER_INVIS		},
 	{"remoteban",		OPER_REMOTEBAN		},
 	{"need_ssl",		OPER_NEEDSSL		},

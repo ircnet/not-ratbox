@@ -81,7 +81,7 @@ static int
 mo_operspy(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	char *pbuf;
-	if (!IsOperSpy(source_p) || operspy)
+	if ((!IsOperSpy(source_p)) || operspy)
 		return 0;
 
 	operspy = 1;

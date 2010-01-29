@@ -99,22 +99,8 @@ m_mode(struct Client *client_p, struct Client *source_p, int parc, const char *p
 	struct membership *msptr;
 	int n = 2;
 	const char *dest;
-	int operspy = 0;
 
 	dest = parv[1];
-
-	if(IsOperSpy(source_p) && *dest == '!')
-	{
-		dest++;
-		operspy = 1;
-
-		if(EmptyString(dest))
-		{
-			sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
-				   me.name, source_p->name, "MODE");
-			return 0;
-		}
-	}
 
 	/* Now, try to find the channel in question */
 	if(!IsChanPrefix(*dest))
@@ -293,21 +279,21 @@ ms_bmask(struct Client *client_p, struct Client *source_p, int parc, const char 
 		banlist = &chptr->exceptlist;
 		mode_type = CHFL_EXCEPTION;
 		needcap = CAP_EX;
-		mems = ONLY_CHANOPS;
+		mems = ALL_MEMBERS;
 		break;
 
 	case 'I':
 		banlist = &chptr->invexlist;
 		mode_type = CHFL_INVEX;
 		needcap = CAP_IE;
-		mems = ONLY_CHANOPS;
+		mems = ALL_MEMBERS;
 		break;
 
 	case 'R':
 		banlist = &chptr->reoplist;
 		mode_type = CHFL_REOP;
 		needcap = CAP_IRCNET;
-		mems = ONLY_CHANOPS;
+		mems = ALL_MEMBERS;
 		break;
 
 		/* maybe we should just blindly propagate this? */
