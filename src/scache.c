@@ -43,13 +43,16 @@
 #define SCACHE_MAX (1<<SCACHE_MAX_BITS)
 
 #define hash_server(x)	fnv_hash_upper_len((const unsigned char *)(x), SCACHE_MAX_BITS, 30)
+#define hash_id(x) (fnv_hash((const unsigned char *)(x), U_MAX_BITS, 0))
 
 static rb_dlink_list scache_hash[SCACHE_MAX];
+static sid_id;
 
 struct scache_entry
 {
 	rb_dlink_node node;
-	char *server_name;
+	char *name;
+	int id;
 };
 
 
@@ -68,14 +71,39 @@ scache_add(const char *name)
 	RB_DLINK_FOREACH(ptr, scache_hash[hashv].head)
 	{
 		sc = ptr->data;
-		if(!irccmp(sc->server_name, name))
-			return sc->server_name;
+		if(!irccmp(sc->name, name))
+			return sc->name;
 	}
 
 	sc = rb_malloc(sizeof(struct scache_entry));
-	sc->server_name = rb_strdup(name);
+	sc->name = rb_strdup(name);
 	rb_dlinkAdd(sc, &sc->node, &scache_hash[hashv]);
-	return sc->server_name;
+	return sc->name;
+}
+
+int sidcache_add(const char *name)
+{
+	struct scache_entry *sc;
+	unsigned int hashv;
+	rb_dlink_node *ptr;
+
+	if(EmptyString(name))
+		return NULL;
+
+	hashv = hash_id(name);
+
+	RB_DLINK_FOREACH(ptr, scache_hash[hashv].head)
+	{
+		sc = ptr->data;
+		if(!irccmp(sc->name, name))
+			return sc->id;
+	}
+
+	sc = rb_malloc(sizeof(struct scache_entry));
+	sc->name = rb_strdup(name);
+	sc->id = sid_id++;
+	rb_dlinkAdd(sc, &sc->node, &scache_hash[hashv]);
+	return sc->id;
 }
 
 void
@@ -92,7 +120,7 @@ count_scache(size_t *number, size_t *mem)
 	{
 		sc = ptr->data;
 		(*number)++;
-		*mem += strlen(sc->server_name) + sizeof(struct scache_entry);
+		*mem += strlen(sc->name) + sizeof(struct scache_entry);
 	}
 	HASH_WALK_END;
 }
