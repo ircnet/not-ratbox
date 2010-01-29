@@ -804,7 +804,7 @@ chm_ban(struct Client *source_p, struct Channel *chptr,
 		caps = CAP_EX;
 
 		if(ConfigChannel.use_except || (dir == MODE_DEL))
-			mems = ONLY_CHANOPS;
+			mems = ALL_MEMBERS;
 		else
 			mems = ONLY_SERVERS;
 		break;
@@ -822,7 +822,7 @@ chm_ban(struct Client *source_p, struct Channel *chptr,
 		caps = CAP_IE;
 
 		if(ConfigChannel.use_invex || (dir == MODE_DEL))
-			mems = ONLY_CHANOPS;
+			mems = ALL_MEMBERS;
 		else
 			mems = ONLY_SERVERS;
 		break;
@@ -840,7 +840,7 @@ chm_ban(struct Client *source_p, struct Channel *chptr,
 		caps = CAP_IRCNET;
 
 		if(ConfigChannel.reop || (dir == MODE_DEL))
-			mems = ONLY_CHANOPS;
+			mems = ALL_MEMBERS;
 		else
 			mems = ONLY_SERVERS;
 		break;
