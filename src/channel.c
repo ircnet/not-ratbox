@@ -662,10 +662,10 @@ struct	Ban *match_ban(rb_dlink_list *bl, struct Client *who, char *nuhs, int ini
 	}
 
  	if (init) {
-		rb_sprintf(&nuhs[0], "%s!%s@%s", who->name, who->username, who->host);
-		rb_sprintf(&nuhs[USERHOST_REPLYLEN], "%s!%s@%s", who->name, who->username, who->sockhost);
-		rb_sprintf(&nuhs[USERHOST_REPLYLEN*2], "%s!%s@%s", who->id, who->username, who->host);
-		rb_sprintf(&nuhs[USERHOST_REPLYLEN*3], "%s!%s@%s", who->id, who->username, who->sockhost);
+		rb_sprintf(&nuhs[USERHOST_REPLYLEN*0], "%s!%s@%s", who->name, who->username, who->sockhost);
+		rb_sprintf(&nuhs[USERHOST_REPLYLEN*1], "%s!%s@%s", who->id, who->username, who->sockhost);
+		rb_sprintf(&nuhs[USERHOST_REPLYLEN*2], "%s!%s@%s", who->name, who->username, who->host);
+		rb_sprintf(&nuhs[USERHOST_REPLYLEN*3], "%s!%s@%s", who->id, who->username, who->host);
 	}
 	
 	RB_DLINK_FOREACH(ptr, bl->head) {
@@ -674,6 +674,11 @@ struct	Ban *match_ban(rb_dlink_list *bl, struct Client *who, char *nuhs, int ini
 		for (i = 0; i < 4; i++)
 			if (match(ban->banstr, &nuhs[i*USERHOST_REPLYLEN]))
 				return ban;
+
+		/* Try with cidr when everything fails. Check for / as match_cidr() is tad slow. */
+		if (strchr(ban->banstr, '/') &&
+		    (match_cidr(ban->banstr, nuhs) || match_cidr(ban->banstr, nuhs + USERHOST_REPLYLEN)))
+			return ban;
 	};
 	return NULL;
 }
