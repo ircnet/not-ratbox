@@ -141,20 +141,21 @@ m_mode(struct Client *client_p, struct Client *source_p, int parc, const char *p
 	else
 	{
 		msptr = find_channel_membership(chptr, source_p);
-		if (!msptr) return 0;
 
-		if(is_deop(msptr))
-			return 0;
+		if (msptr) {
+			if(is_deop(msptr))
+				return 0;
 
-		if(!is_chanop(msptr) && !MyClient(source_p) && parc > 2)
-		{
-			/* For consistency with 2.11, drop it if no ops. */
-			sendto_realops_flags(UMODE_DEBUG, L_ALL, "Fake: %s MODE %s %s %s",
-			    source_p->name, chptr->chname, parv[2], array_to_string(&parv[3], parc-3, 1));
+			if(!is_chanop(msptr) && !MyClient(source_p) && parc > 2)
+			{
+				/* For consistency with 2.11, drop it if no ops. */
+				sendto_realops_flags(UMODE_DEBUG, L_ALL, "Fake: %s MODE %s %s %s",
+				    source_p->name, chptr->chname, parv[2], array_to_string(&parv[3], parc-3, 1));
 
-			sendto_server(client_p, chptr, CAP_TS6, NOCAPS, ":%s MODE %s %s", source_p->id,
-					chptr->chname, array_to_string(&parv[2], parc-2, 0));
-			return 0;
+				sendto_server(client_p, chptr, CAP_TS6, NOCAPS, ":%s MODE %s %s", source_p->id,
+						chptr->chname, array_to_string(&parv[2], parc-2, 0));
+				return 0;
+			}
 		}
 
 		/* Finish the flood grace period... */
@@ -857,7 +858,8 @@ chm_ban(struct Client *source_p, struct Channel *chptr,
 			return;
 		*errors |= errorval;
 
-		/* non-ops cant see +eI lists.. */
+#if 0
+		/* non-members cant see +eI lists.. */
 		if(!alevel && mode_type != CHFL_BAN)
 		{
 			if(!(*errors & SM_ERR_NOOPS))
@@ -866,13 +868,15 @@ chm_ban(struct Client *source_p, struct Channel *chptr,
 			*errors |= SM_ERR_NOOPS;
 			return;
 		}
-
+#else
+		if ((alevel=IsMember(source_p, chptr)) || (mode_type == CHFL_BAN))
+#endif
 		RB_DLINK_FOREACH(ptr, list->head)
 		{
 			banptr = ptr->data;
 			sendto_one(source_p, form_str(rpl_list),
 				   me.name, source_p->name, chptr->chname,
-				   banptr->banstr, banptr->who, banptr->when);
+				   banptr->banstr, alevel?banptr->who:"*!*@*", banptr->when);
 		}
 		sendto_one(source_p, form_str(rpl_endlist), me.name, source_p->name, chptr->chname);
 		return;
@@ -1411,7 +1415,7 @@ get_channel_access(struct Client *source_p, struct membership *msptr)
 {
 	if(!MyClient(source_p))
 		return CHFL_CHANOP|CHFL_UNIQOP;
-	return msptr->flags & (CHFL_CHANOP|CHFL_UNIQOP);
+	return msptr?(msptr->flags & (CHFL_CHANOP|CHFL_UNIQOP)):0;
 }
 
 /* set_channel_mode()
