@@ -163,6 +163,7 @@ static struct StatsStruct stats_cmd_table[] = {
 	{'Q', stats_resv, 1, 0,},
 	{'r', stats_usage, 1, 0,},
 	{'R', stats_usage, 1, 0,},
+	{'s', sidmap_report, 1, 0 },
 	{'t', stats_tstats, 1, 0,},
 	{'T', stats_tstats, 1, 0,},
 	{'u', stats_uptime, 0, 0,},
@@ -176,8 +177,6 @@ static struct StatsStruct stats_cmd_table[] = {
 	{'z', stats_memory, 1, 0,},
 	{'Z', stats_ziplinks, 1, 0,},
 	{'?', stats_servlinks, 0, 0,},
-	{'s', sidmap_report, 1, 0 },
-	{'S', sidmap_report, 1, 0 },
 	{(char)0, (void (*)())0, 0, 0,}
 };
 
