@@ -14,7 +14,7 @@ listen { port = $2; };
 class "users" { ping_time = 2 minutes; number_per_ident = 2; number_per_ip = 3; number_per_ip_global = 5; number_per_cidr = 4; max_number = 100; sendq = 100 kbytes; };
 class "server" { ping_time = 5 minutes; connectfreq = 5 seconds; max_number = 10; sendq=2 megabytes; };
 auth { user = "*@*"; class = "users"; };
-operator "$OPERNAME" { user = "*@127.0.0.1"; password = "nasrat"; flags =  global_kill, remote, kline, unkline, gline,die, rehash, admin, xline, operwall, ~encrypted;};
+operator "$OPERNAME" { user = "*@127.0.0.1"; password = "$PASS"; flags =  global_kill, remote, kline, unkline, gline,die, rehash, admin, xline, operwall, ~encrypted;};
 channel { delay = 30; reop = 1; };
 general { throttle_count = 9999; collision_fnc = yes; burst_away = yes;
 oper_only_umodes = bots, cconn, debug, full, skill, nchange, rej, spy, external, operwall, locops, unauth;
