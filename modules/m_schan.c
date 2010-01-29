@@ -80,7 +80,8 @@ hfn_schan_notice(hook_data_int * hdata)
 		struct schan *sch = ptr->data;
 
 		if (IsSCH(sch->chptr) && match_esc(sch->pattern, hdata->arg1) && (hdata->arg2 & sch->flags)) {
-			sendto_channel_flags(NULL, 0, &me, sch->chptr, "NOTICE %s :%s", sch->chptr->chname, (char*)hdata->arg1);
+			const char *str = hdata->arg1;
+			sendto_channel_flags(NULL, 0, &me, sch->chptr, "NOTICE %s :%s", sch->chptr->chname, str);
 			if (!sch->pass)
 				break;
 		}

@@ -39,6 +39,7 @@
 #include "modules.h"
 #include "s_log.h"
 #include "uid.h"
+#include "sidmap.h"
 
 static int m_join(struct Client *, struct Client *, int, const char **);
 static int ms_join(struct Client *, struct Client *, int, const char **);
@@ -71,7 +72,6 @@ mapi_clist_av2 join_clist[] = { &join_msgtab, &sjoin_msgtab,
 DECLARE_MODULE_AV2(join, NULL, NULL, join_clist, NULL, NULL, "$Revision$");
 
 static void do_join_0(struct Client *client_p, struct Client *source_p);
-static int check_channel_name_loc(struct Client *source_p, const char *name);
 
 static int can_join(struct Client *source_p, struct Channel *chptr, char *key);
 

@@ -44,7 +44,7 @@
 
 static void do_whois(struct Client *client_p, struct Client *source_p, int parc,
 		     const char *parv[]);
-static void single_whois(struct Client *source_p, struct Client *target_p, int operspy);
+static void single_whois(struct Client *source_p, struct Client *target_p);
 
 static int m_whois(struct Client *, struct Client *, int, const char **);
 static int ms_whois(struct Client *, struct Client *, int, const char **);
@@ -203,7 +203,7 @@ do_whois(struct Client *client_p, struct Client *source_p, int parc, const char 
 			report_operspy(source_p, "WHOIS", buffer);
 		}
 
-		single_whois(source_p, target_p, operspy);
+		single_whois(source_p, target_p);
 	}
 	else
 		sendto_one_numeric(source_p, ERR_NOSUCHNICK,
@@ -223,7 +223,7 @@ do_whois(struct Client *client_p, struct Client *source_p, int parc, const char 
  * 		  writing results to source_p
  */
 static void
-single_whois(struct Client *source_p, struct Client *target_p, int operspy)
+single_whois(struct Client *source_p, struct Client *target_p)
 {
 	char buf[BUFSIZE];
 	rb_dlink_node *ptr;

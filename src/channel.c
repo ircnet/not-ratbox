@@ -41,6 +41,7 @@
 #include "s_newconf.h"
 #include "s_log.h"
 #include "sidmap.h"
+#include "scache.h"
 
 struct config_channel_entry ConfigChannel;
 rb_dlink_list global_channel_list;
@@ -103,7 +104,7 @@ free_channel(struct Channel *chptr)
 struct Ban *
 allocate_ban(const char *banstr, const char *who)
 {
-	const char *cwho = scache_find(who);
+	char *cwho = scache_find(who);
 	struct Ban *bptr;
 	bptr = rb_bh_alloc(ban_heap);
 	bptr->banstr = rb_strndup(banstr, BANLEN);

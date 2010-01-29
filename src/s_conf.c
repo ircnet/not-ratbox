@@ -799,6 +799,7 @@ set_default_conf(void)
 #ifdef HAVE_ZLIB
 	ConfigFileEntry.compression_level = 4;
 #endif
+	ConfigFileEntry.ping_cookie = YES;
 
 	ConfigFileEntry.oper_umodes = UMODE_LOCOPS | UMODE_SERVNOTICE |
 		UMODE_OPERWALL | UMODE_WALLOP;

@@ -72,7 +72,7 @@ mapi_clist_av2 who_clist[] = { &who_msgtab, NULL };
 DECLARE_MODULE_AV2(who, NULL, NULL, who_clist, NULL, NULL, "$Revision$");
 
 static void do_who_on_channel(struct Client *source_p, struct Channel *chptr, int server_oper, int member, struct who_format *fmt);
-static void who_global(struct Client *source_p, const char *mask, int server_oper, int operspy, struct who_format *fmt);
+static void who_global(struct Client *source_p, const char *mask, int server_oper, struct who_format *fmt);
 static void do_who(struct Client *source_p,
  		   struct Client *target_p, struct membership *msptr,
  		   struct who_format *fmt);
@@ -175,7 +175,7 @@ m_who(struct Client *client_p, struct Client *source_p, int parc, const char *pa
 			ClearCork(source_p);
 		}
 		sendto_one(source_p, form_str(RPL_ENDOFWHO),
-			   me.name, source_p->name, parv[1] + operspy);
+			   me.name, source_p->name, parv[1]);
 		return 0;
 	}
 
@@ -234,9 +234,9 @@ m_who(struct Client *client_p, struct Client *source_p, int parc, const char *pa
 	 */
 	SetCork(source_p);
 	if((*(mask + 1) == '\0') && (*mask == '0'))
-		who_global(source_p, NULL, server_oper, 0, &fmt);
+		who_global(source_p, NULL, server_oper, &fmt);
 	else
-		who_global(source_p, mask, server_oper, operspy, &fmt);
+		who_global(source_p, mask, server_oper, &fmt);
 	ClearCork(source_p);
 	sendto_one(source_p, form_str(RPL_ENDOFWHO), me.name, source_p->name, mask);
 
@@ -303,7 +303,7 @@ who_common_channel(struct Client *source_p, struct Channel *chptr,
  *		  and will be left cleared on return
  */
 static void
-who_global(struct Client *source_p, const char *mask, int server_oper, int operspy, struct who_format *fmt)
+who_global(struct Client *source_p, const char *mask, int server_oper, struct who_format *fmt)
 {
 	struct membership *msptr;
 	struct Client *target_p;
