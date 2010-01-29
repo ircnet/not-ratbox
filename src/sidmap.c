@@ -74,7 +74,7 @@ static void check_words(int id)
 {
 	rb_dlink_node *ptr;
 
-	int nw = SM_WORDS(id);
+	int nw = SM_WORDS(id+1);
 	if (nw <= sid_words)
 		return;
 
@@ -85,7 +85,7 @@ static void check_words(int id)
 		struct Channel *chptr = ptr->data;
 
 		if (!chptr->sidmap)
-			return;
+			continue;
 
 		sidmap_realloc(&chptr->sidmap, nw);
 	}

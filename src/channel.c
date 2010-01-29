@@ -40,6 +40,7 @@
 #include "s_conf.h"		/* ConfigFileEntry, ConfigChannel */
 #include "s_newconf.h"
 #include "s_log.h"
+#include "sidmap.h"
 
 struct config_channel_entry ConfigChannel;
 rb_dlink_list global_channel_list;
@@ -238,12 +239,6 @@ remove_user_from_channel(struct membership *msptr)
 	client_p = msptr->client_p;
 	chptr = msptr->chptr;
 
-	if (!MyConnect(client_p) && (is_chanop(msptr) || !ConfigChannel.no_opless_hack)) {
-		chptr->reop = rb_current_time();
-		if (client_p->flags & FLAGS_KILLED)
-			chptr->chlock = chptr->reop;
-	}
-
 	rb_dlinkDelete(&msptr->usernode, &client_p->user->channel);
 	rb_dlinkDelete(&msptr->channode, &chptr->members);
 
@@ -279,6 +274,15 @@ remove_user_from_channels(struct Client *client_p)
 	{
 		msptr = ptr->data;
 		chptr = msptr->chptr;
+
+		if (is_chanop(msptr))
+			chptr->reop = rb_current_time();
+
+		if (!MyConnect(client_p) && (client_p->flags & FLAGS_KILLED)) {
+			if ((is_chanop(msptr) || !ConfigChannel.no_opless_hack))
+				chptr->chlock = rb_current_time();
+			sidmap_mark(chptr, client_p->servptr->id);
+		}
 
 		rb_dlinkDelete(&msptr->channode, &chptr->members);
 

@@ -1284,6 +1284,7 @@ remove_our_modes(struct Channel *chptr)
 			msptr->flags &= ~CHFL_CHANOP;
 			*mbuf++ = 'o';
 			pbuf += rb_sprintf(pbuf, " %s", Anon(msptr->client_p->name));
+			count++;
 
 			/* +ov, might not fit so check. */
 			if(is_voiced(msptr))
