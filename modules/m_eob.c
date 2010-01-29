@@ -36,6 +36,7 @@
 #include "modules.h"
 #include "s_conf.h"
 #include "s_serv.h"
+#include "sidmap.h"
 
 static int ms_eob(struct Client *, struct Client *, int, const char **);
 static int ms_eoback(struct Client *, struct Client *, int, const char **);

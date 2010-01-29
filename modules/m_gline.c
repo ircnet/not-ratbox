@@ -82,7 +82,7 @@ static	void	send_gline(struct Client *source_p, const char *user, const char *ho
 		source_p->id, user, host, reason);
 	if (encap)
 		sendto_match_servs(source_p, "*", CAP_ENCAP | CAP_TS6, CAP_GLN,
-			"ENCAP * GLINE %s %s :%s");
+			"ENCAP * GLINE %s %s :%s", user, host, reason);
 }
 
 

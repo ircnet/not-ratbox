@@ -220,7 +220,7 @@ struct LocalUser;
 #define ClearHidden(x)		((x)->flags &= ~FLAGS_HIDDEN)
 #define IsHidden(x)		((x)->servptr->name == (x)->name)
 #define ClearEob(x)		((x)->flags &= ~FLAGS_EOB)
-#define SetEob(x)		((x)->flags |= FLAGS_EOB)
+#define SetEob(x)		do { ((x)->flags |= FLAGS_EOB); sidmap_clear(x); } while(0)
 #define HasSentEob(x)		((x)->flags & FLAGS_EOB)
 #define IsDead(x)          	((x)->flags &  FLAGS_DEAD)
 #define SetDead(x)         	((x)->flags |= FLAGS_DEAD)

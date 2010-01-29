@@ -516,7 +516,7 @@ destroy_channel(struct Channel *chptr)
 {
 
 	/* CHANDELAY: will be destroyed by the timer eventually */
-	if (IsSCH(chptr) || HasHistory(chptr))
+	if (IsSCH(chptr) || HasHistory(chptr) || sidmap_check(chptr))
 		return;
 
 	kill_channel_modes(chptr);

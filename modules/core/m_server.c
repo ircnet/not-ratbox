@@ -793,9 +793,9 @@ burst_TS6(struct Client *client_p)
 		t = buf + mlen;
 
 		if (empty) {
-			if (!ConfigChannel.delay || *chptr->chname == '+')
+			if (!ConfigChannel.delay || *chptr->chname == '+' || cptr->channelts)
 				continue;
-			/* burst empty channels */
+			/* burst empty channels to be locked */
 			*t++ = '.';
 			*t++ = ' ';
 			cur_len += 2;

@@ -39,6 +39,7 @@
 #include "s_conf.h"
 #include "s_newconf.h"
 #include "s_serv.h"
+#include "uid.h"
 
 /*
  * NOTE: parse() should not be called recursively by other functions!

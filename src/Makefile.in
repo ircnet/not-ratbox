@@ -76,7 +76,7 @@ am_libcore_la_OBJECTS = dns.lo bandbi.lo blacklist.lo cache.lo \
 	modules.lo monitor.lo newconf.lo numeric.lo operhash.lo \
 	packet.lo parse.lo reject.lo restart.lo s_auth.lo s_conf.lo \
 	s_newconf.lo s_log.lo s_serv.lo s_user.lo scache.lo send.lo \
-	sslproc.lo supported.lo whowas.lo version.lo uid.lo \
+	sidmap.lo sslproc.lo supported.lo whowas.lo version.lo uid.lo \
 	ircd_parser.lo ircd_lexer.lo
 libcore_la_OBJECTS = $(am_libcore_la_OBJECTS)
 libcore_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -296,6 +296,7 @@ libcore_la_SOURCES = \
 	s_user.c			\
 	scache.c			\
 	send.c				\
+	sidmap.c			\
 	sslproc.c			\
 	supported.c			\
 	whowas.c			\
@@ -424,6 +425,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/s_user.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scache.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/send.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sidmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sslproc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/supported.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uid.Plo@am__quote@

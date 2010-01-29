@@ -53,6 +53,7 @@ libcore_la_SOURCES =			\
 	s_user.c			\
 	scache.c			\
 	send.c				\
+	sidmap.c			\
 	sslproc.c			\
 	supported.c			\
 	whowas.c			\

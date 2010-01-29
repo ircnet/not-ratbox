@@ -36,6 +36,7 @@
 #include "match.h"
 #include "parse.h"
 #include "hash.h"
+#include "sidmap.h"
 #include "modules.h"
 
 static int mr_pong(struct Client *, struct Client *, int, const char **);
