@@ -293,12 +293,15 @@ static void introduce_server(struct Client *client_p, struct Client *source_p, s
 		}
 	} else
 #endif
-	if (server_p->serv->realname)
+	sendto_realops_flags(UMODE_ALL, L_ALL,
+			     "introducing to %s[%s], introduced %s[%s] => %s", client_p->name, client_p->id, server_p->name, server_p->id, server_p->serv->realname?server_p->serv->realname:"[none]");
+
+	if (server_p->serv->realname || (ServerConfMask(client_p->localClient->att_sconf, server_p->name) != server_p->name))
 	{
 		sendto_one(client_p, ":%s SID %s %d %s :[%s]%s",
 			   source_p->id, ServerConfMask(client_p->localClient->att_sconf, server_p->name),
 			   server_p->hopcount + 1, server_p->id,
-			   server_p->serv->realname,
+			   server_p->serv->realname?server_p->serv->realname:server_p->name,
 			   server_p->info);
 	} else {
 		sendto_one(client_p, ":%s SID %s %d %s :%s",
@@ -372,6 +375,10 @@ static	void	set_gecos(struct Client *server_p, const char *name)
 {
 	char realname[HOSTLEN+1];
 	const char *p = strchr(name, ']');
+
+	sendto_realops_flags(UMODE_ALL, L_ALL,
+			     "setting gecos for %s[%s] to %s", server_p->name, server_p->id, name);
+
 	if (name[0] == '[' && p && (p-name) < HOSTLEN) {
 		rb_strlcpy(realname, name+1, p-name);
 		if (match(server_p->name, realname))
