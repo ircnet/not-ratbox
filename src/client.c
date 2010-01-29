@@ -1004,7 +1004,7 @@ recurse_remove_clients(struct Client *source_p, const char *comment)
 			continue;
 		}
 
-		target_p->flags |= FLAGS_KILLED;
+		target_p->flags |= FLAGS_KILLED|FLAGS_SQUIT;
 
 		if(ConfigFileEntry.nick_delay > 0)
 			add_nd_entry(target_p->name);

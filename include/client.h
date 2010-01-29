@@ -151,6 +151,7 @@ struct LocalUser;
 #define FLAGS_EXEMPTSPAMBOT	0x01000000
 #define FLAGS_EXEMPTSHIDE	0x02000000
 #define FLAGS_EXEMPTJUPE	0x04000000
+#define FLAGS_SQUIT		0x08000000
 
 /* flags for local clients, this needs stuff moved from above to here at some point */
 #define LFLAGS_SSL		0x00000001

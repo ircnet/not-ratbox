@@ -278,8 +278,8 @@ remove_user_from_channels(struct Client *client_p)
 		if (is_chanop(msptr))
 			chptr->reop = rb_current_time();
 
-		if (!MyConnect(client_p) && (client_p->flags & FLAGS_KILLED)) {
-			if ((is_chanop(msptr) || !ConfigChannel.no_opless_hack))
+		if (!MyConnect(client_p) && (client_p->flags & FLAGS_SQUIT)) {
+			if ((is_chanop(msptr) || (!ConfigChannel.no_opless_hack)))
 				chptr->chlock = rb_current_time();
 			sidmap_mark(chptr, client_p->servptr->id);
 		}
