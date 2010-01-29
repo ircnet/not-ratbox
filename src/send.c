@@ -647,18 +647,15 @@ sendto_channel_anon(struct Client *anon, struct Channel *chptr, const char *patt
 	rb_linebuf_putmsg(&linebuf, pattern, &args, NULL);
 	va_end(args);
 
-	if ((IsAnonymous(chptr))) {
-		send_linebuf(anon, &linebuf);
-		rb_linebuf_donebuf(&linebuf);
-		return;
-	}
-
 	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, chptr->locmembers.head)
 	{
 		msptr = ptr->data;
 		target_p = msptr->client_p;
 
 		if(IsIOError(target_p))
+			continue;
+
+		if (IsAnonymous(chptr) && target_p != anon)
 			continue;
 
 		send_linebuf(target_p, &linebuf);
