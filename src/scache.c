@@ -77,6 +77,28 @@ scache_add(const char *name)
 	rb_dlinkAdd(sc, &sc->node, &scache_hash[hashv]);
 	return sc->server_name;
 }
+const char *
+scache_find(const char *name)
+{
+	struct scache_entry *sc;
+	unsigned int hashv;
+	rb_dlink_node *ptr;
+
+	if(EmptyString(name))
+		return NULL;
+
+	hashv = hash_server(name);
+
+	RB_DLINK_FOREACH(ptr, scache_hash[hashv].head)
+	{
+		sc = ptr->data;
+		if(!irccmp(sc->server_name, name))
+			return sc->server_name;
+	}
+
+	return NULL;
+}
+
 
 void
 count_scache(size_t *number, size_t *mem)

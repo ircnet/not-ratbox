@@ -440,10 +440,8 @@ add_id(struct Client *source_p, struct Channel *chptr, const char *banid,
 
 	if(IsClient(source_p))
 		rb_sprintf(who, "%s!%s@%s", source_p->name, source_p->username, source_p->host);
-	else
-		rb_strlcpy(who, source_p->name, sizeof(who));
 
-	actualBan = allocate_ban(realban, who);
+	actualBan = allocate_ban(realban, IsClient(source_p)?who:source_p->name);
 	actualBan->when = rb_current_time();
 
 	rb_dlinkAdd(actualBan, &actualBan->node, list);

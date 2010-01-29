@@ -28,6 +28,6 @@
 #define INCLUDED_scache_h
 
 const char *scache_add(const char *name);
-int sidcache_add(const char *name);
+const char *scache_find(const char *name);
 void count_scache(size_t *, size_t *);
 #endif

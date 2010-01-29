@@ -103,10 +103,11 @@ free_channel(struct Channel *chptr)
 struct Ban *
 allocate_ban(const char *banstr, const char *who)
 {
+	const char *cwho = scache_find(who);
 	struct Ban *bptr;
 	bptr = rb_bh_alloc(ban_heap);
 	bptr->banstr = rb_strndup(banstr, BANLEN);
-	bptr->who = rb_strndup(who, BANLEN);
+	bptr->who = cwho?cwho:rb_strndup(who, BANLEN);
 
 	return (bptr);
 }
@@ -115,7 +116,8 @@ void
 free_ban(struct Ban *bptr)
 {
 	rb_free(bptr->banstr);
-	rb_free(bptr->who);
+	if (scache_find(bptr->who) != bptr->who)
+		rb_free(bptr->who);
 	rb_bh_free(ban_heap, bptr);
 }
 
