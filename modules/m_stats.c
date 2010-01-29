@@ -52,6 +52,7 @@
 #include "scache.h"
 #include "s_log.h"
 #include "blacklist.h"
+#include "sidmap.h"
 
 static int m_stats(struct Client *, struct Client *, int, const char **);
 
@@ -175,6 +176,8 @@ static struct StatsStruct stats_cmd_table[] = {
 	{'z', stats_memory, 1, 0,},
 	{'Z', stats_ziplinks, 1, 0,},
 	{'?', stats_servlinks, 0, 0,},
+	{'s', sidmap_report, 1, 0 },
+	{'S', sidmap_report, 1, 0 },
 	{(char)0, (void (*)())0, 0, 0,}
 };
 

@@ -19,7 +19,7 @@
 #define SCACHE_MAX_BITS 8
 #define SCACHE_MAX (1<<SCACHE_MAX_BITS)
 
-#define hash_id(x) (fnv_hash((const unsigned char *)(x), U_MAX_BITS, 0))
+#define hash_id(x) (fnv_hash((const unsigned char *)(x), SCACHE_MAX_BITS, 0))
 
 
 #define SMW_BYTES		(sizeof(sidmap_t))
@@ -38,6 +38,43 @@ struct scache_entry
 	char *name;
 	int id;
 };
+
+void sidmap_report(struct Client *source_p)
+{
+	rb_dlink_node *ptr;
+	int i;
+	int counts[sid_count];
+	char *ids[sid_count];
+
+	memset(counts, 0, sizeof(int) * sid_count);
+
+	/* resolve ids to name */
+	for (i = 0; i < SCACHE_MAX; i++) {
+		RB_DLINK_FOREACH(ptr, scache_hash[i].head)
+		{
+			struct scache_entry *sc = ptr->data;
+			ids[sc->id] = sc->name;
+		}
+	}
+
+	/* for each channel, count sids used */
+	RB_DLINK_FOREACH(ptr, global_channel_list.head)
+	{
+		struct Channel *chptr = ptr->data;
+		if (!chptr->sidmap) continue;
+		for (i = 0; i < sid_count; i++) {
+			sidmap_t word = (((sidmap_t *) chptr->sidmap)[i/SMW_BITS] & sm_sidmap[i/SMW_BITS]);
+			if (word & (1<<(i%SMW_BITS)))
+				counts[i]++;
+		}
+	}
+
+
+	for (i = 0; i < sid_count; i++)
+		if (counts[i])
+			sendto_one_numeric(source_p, RPL_STATSDEBUG, "s :%s (%d)", ids[i], counts[i]);
+}
+
 
 static int sidcache_add(const char *name)
 {
