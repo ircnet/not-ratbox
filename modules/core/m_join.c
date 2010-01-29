@@ -689,7 +689,6 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 	if((chptr = get_or_create_channel(source_p, parv[2], &isnew)) == NULL)
 		return 0;	/* channel name too long? */
 
-
 	oldts = chptr->channelts;
 	oldmode = &chptr->mode;
 
@@ -729,6 +728,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 			strcpy(mode.key, oldmode->key);
 	}
 
+
 	/* Lost the TS, other side wins, so remove modes on this side */
 	if(!keep_our_modes)
 	{
@@ -738,6 +738,14 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 				     me.name, chptr->chname, chptr->chname,
 				     (long)oldts, (long)newts);
 	}
+
+	/* In case the channel is empty and there is an user coming from a netjoin,
+	 * reset our modes as he'll be setting the authoritative ones.
+	 * This will prevent long-term split servers from bouncing
+	 * stale modes back.
+	 */
+	if (keep_new_modes && rb_dlink_list_length(&chptr->members) <= 0)
+		keep_our_modes = NO;
 
 	set_final_mode(source_p, chptr, &mode, oldmode);
 	chptr->mode = mode;
@@ -934,17 +942,6 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 					     modebuf, parabuf);
 	}
 
-
-	if(!joins)
-	{
-		/* this just triggers chandelay */
-		if (*chptr->chname != '+')
-			chptr->chlock = rb_current_time();
-		if(isnew)
-			destroy_channel(chptr);
-		return 0;
-	}
-
 	if (len_uid == 0)
 	{
 		*ptr_uid++ = '.';
@@ -990,6 +987,14 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 		chptr->ban_serial++;
 	}
 
+	if(!joins)
+	{
+		/* this just triggers chandelay */
+		if (*chptr->chname != '+')
+			chptr->chlock = rb_current_time();
+		if(isnew)
+			destroy_channel(chptr);
+	}
 
 	return 0;
 }
