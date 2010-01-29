@@ -868,7 +868,6 @@ chm_ban(struct Client *source_p, struct Channel *chptr,
 			*errors |= SM_ERR_NOOPS;
 			return;
 		}
-#else
 		if ((alevel=IsMember(source_p, chptr)) || (mode_type == CHFL_BAN))
 #endif
 		RB_DLINK_FOREACH(ptr, list->head)
