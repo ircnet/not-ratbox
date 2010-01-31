@@ -857,12 +857,12 @@ set_default_conf(void)
 	ConfigChannel.use_sslonly = NO;
 	ConfigChannel.knock_delay = 300;
 	ConfigChannel.knock_delay_channel = 60;
-	ConfigChannel.max_chans_per_user = 15;
-	ConfigChannel.max_bans = 25;
+	ConfigChannel.max_chans_per_user = 21;
+	ConfigChannel.max_bans = 64;
 	ConfigChannel.burst_topicwho = YES;
 	ConfigChannel.invite_ops_only = YES;
 
-	ConfigChannel.default_split_user_count = 50000;
+	ConfigChannel.default_split_user_count = 10000;
 	ConfigChannel.default_split_server_count = 65;
 	ConfigChannel.no_join_on_split = NO;
 	ConfigChannel.no_create_on_split = NO;

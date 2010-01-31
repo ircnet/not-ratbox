@@ -1,7 +1,12 @@
-$Id: CREDITS 25873 2008-08-14 02:33:13Z androsyn $
+$Id$
+
+!ratbox is not just ircd-ratbox anymore.
+The following people people are guilty of bringing it in here:
+
+sd, Karel Tuma <karel.tuma -at- gmail.com>
+jilles, Jilles Tjoelker <jilles -at- stack.nl>
  
-ircd-ratbox is an evolution where ircd-hybrid left off around version 7-rc1.  
-Currently the ircd-ratbox team consists of the following developers:
+The codebase is largely built on top of ircd-ratbox, developed by:
  
 AndroSyn, Aaron Sethman <androsyn -at- ratbox.org>
 anfl, Lee Hardy <lee -at- leeh.co.uk>

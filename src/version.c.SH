@@ -3,7 +3,7 @@
 # $Id: version.c.SH 26076 2008-09-14 18:39:24Z jilles $ 
 
 spitshell=cat
-package=ircd-ratbox
+package=IRC
 
 echo "Extracting $package/src/version.c..."
 
@@ -65,6 +65,7 @@ const char *infotext[] =
   "Copyright 1988, 1989, 1990, 1991 University of Oulu, Computing Center",
   "Copyright (c) 1996-2001 Hybrid Development Team", 
   "Copyright (c) 2002-2008 ircd-ratbox Development Team",
+  "Copyright (c) 2010 !ratbox Development Team",
   "",
   "This program is free software; you can redistribute it and/or",
   "modify it under the terms of the GNU General Public License as",

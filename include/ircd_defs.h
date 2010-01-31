@@ -37,7 +37,7 @@
 #define INCLUDED_ircd_defs_h
 
 /* a password string used by ircnet servers (fake version: 2.11.3p199) */
-#define IRCNET_VERSTRING "0211030199"
+#define IRCNET_VERSTRING "0212000000"
 #define IRCNET_FAKESTRING IRCNET_VERSTRING " IRC|aCDEFHJKMQRTu Pj"
 
 /* For those unfamiliar with GNU format attributes, a is the 1 based
@@ -107,7 +107,7 @@
 #define HOSTIPLEN	53	/* sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255.ipv6") */
 
 /* reason length of klines, parts, quits etc */
-#define REASONLEN	120
+#define REASONLEN	160
 
 #define AWAYLEN		90
 

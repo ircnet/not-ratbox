@@ -371,20 +371,8 @@ quote_splitmode(struct Client *source_p, const char *charval, int intval)
 				break;
 		}
 
-		/* OFF */
-		if(newval == 0)
-		{
-			sendto_realops_flags(UMODE_ALL, L_ALL,
-					     "%s is disabling splitmode", get_oper_name(source_p));
-
-			splitmode = 0;
-			splitchecking = 0;
-
-			rb_event_delete(checksplit_ev);
-			checksplit_ev = NULL;
-		}
 		/* ON */
-		else if(newval == 1)
+		if(newval == 1)
 		{
 			sendto_realops_flags(UMODE_ALL, L_ALL,
 					     "%s is enabling and activating splitmode",
@@ -421,7 +409,7 @@ quote_splitmode(struct Client *source_p, const char *charval, int intval)
 static void
 quote_splitnum(struct Client *source_p, const char *arg, int newval)
 {
-	if(newval >= 0)
+	if(newval >= 0 && (newval > ConfigChannel.default_split_server_count))
 	{
 		sendto_realops_flags(UMODE_ALL, L_ALL,
 				     "%s has changed SPLITNUM to %i", source_p->name, newval);
