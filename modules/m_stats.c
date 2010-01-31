@@ -53,6 +53,7 @@
 #include "s_log.h"
 #include "blacklist.h"
 #include "sidmap.h"
+#include "match.h"
 
 static int m_stats(struct Client *, struct Client *, int, const char **);
 
@@ -193,25 +194,16 @@ static int
 m_stats(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static time_t last_used = 0;
+	static int count;
 	int i;
 	char statchar;
 
 	statchar = parv[1][0];
 
-	if(MyClient(source_p) && !IsOper(source_p))
-	{
-		/* Check the user is actually allowed to do /stats, and isnt flooding */
-		if((last_used + ((parc>2)?ConfigFileEntry.pace_wait:ConfigFileEntry.pace_wait_simple)) > rb_current_time())
-		{
-			/* safe enough to give this on a local connect only */
-			sendto_one(source_p, form_str(RPL_LOAD2HI),
-				   me.name, source_p->name, "STATS");
-			sendto_one_numeric(source_p, RPL_ENDOFSTATS,
-					   form_str(RPL_ENDOFSTATS), statchar);
-			return 0;
-		}
-		else
-			last_used = rb_current_time();
+	/* put whatever you want to be exempt in the strchr string */
+	if ((!strchr("POH", ToUpper(statchar))) && (!check_limit(source_p, &last_used, &count, "STATS"))) {
+		sendto_one_numeric(source_p, RPL_ENDOFSTATS,
+				   form_str(RPL_ENDOFSTATS), statchar);
 	}
 
 	if(hunt_server(client_p, source_p, ":%s STATS %s :%s", 2, parc, parv) != HUNTED_ISME)

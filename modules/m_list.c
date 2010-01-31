@@ -62,19 +62,14 @@ static int
 m_list(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static time_t last_used = 0L;
+	static int count;
 
 	if(parc < 2 || !IsChannelName(parv[1]))
 	{
-		/* pace this due to the sheer traffic involved */
-		if(((last_used + ConfigFileEntry.pace_wait) > rb_current_time()))
-		{
-			sendto_one(source_p, form_str(RPL_LOAD2HI),
-				   me.name, source_p->name, "LIST");
+		if (!check_limit(source_p, &last_used, &count, "LIST")) {
 			sendto_one(source_p, form_str(RPL_LISTEND), me.name, source_p->name);
 			return 0;
 		}
-		else
-			last_used = rb_current_time();
 	}
 
 	/* If no arg, do all channels *whee*, else just one channel */

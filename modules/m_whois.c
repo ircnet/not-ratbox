@@ -76,6 +76,7 @@ static int
 m_whois(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static time_t last_used = 0;
+	static int count;
 
 	if(parc > 2)
 	{
@@ -86,20 +87,9 @@ m_whois(struct Client *client_p, struct Client *source_p, int parc, const char *
 			return 0;
 		}
 
-		if(!IsOper(source_p))
-		{
-			/* seeing as this is going across servers, we should limit it */
-			if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
-			{
-				sendto_one(source_p, form_str(RPL_LOAD2HI),
-					   me.name, source_p->name, "WHOIS");
-				sendto_one_numeric(source_p, RPL_ENDOFWHOIS,
-						   form_str(RPL_ENDOFWHOIS), parv[1]);
-				return 0;
-			}
-			else
-				last_used = rb_current_time();
-		}
+		/* seeing as this is going across servers, we should limit it */
+		if (!check_limit_simple(source_p, &last_used, &count, "WHOIS"))
+			return 0;
 
 		if(hunt_server(client_p, source_p, ":%s WHOIS %s :%s", 1, parc, parv) !=
 		   HUNTED_ISME)

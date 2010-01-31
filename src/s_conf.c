@@ -149,6 +149,49 @@ free_conf(struct ConfItem *aconf)
 	rb_bh_free(confitem_heap, aconf);
 }
 
+int check_limit(struct Client *source_p, time_t *last_used, int *count, const char *msg)
+{
+	if ((!MyConnect(source_p)) || IsOper(source_p))
+		return 1;
+	if (*last_used + ConfigFileEntry.ratelimit > rb_current_time())
+	{
+		if (*count > ConfigFileEntry.ratelimit_count)
+		{
+			sendto_one(source_p, form_str(RPL_LOAD2HI),
+					me.name, EmptyString(source_p->name) ? "*" : source_p->name, msg);
+			return 0;
+		}
+		(*count)++;
+	} else *count = 0;
+	(*last_used) = rb_current_time();
+        if(!IsFloodDone(source_p))
+		flood_endgrace(source_p);
+	source_p->localClient->sent_parsed += ConfigFileEntry.penalty*2;
+	return 1;
+}
+
+int check_limit_simple(struct Client *source_p, time_t *last_used, int *count, const char *msg)
+{
+	if ((!MyConnect(source_p)) || IsOper(source_p))
+		return 1;
+	if (*last_used + ConfigFileEntry.ratelimit_simple > rb_current_time())
+	{
+		if (*count > ConfigFileEntry.ratelimit_simple_count)
+		{
+			sendto_one(source_p, form_str(RPL_LOAD2HI),
+					me.name, EmptyString(source_p->name) ? "*" : source_p->name, msg);
+			return 0;
+		}
+		(*count)++;
+	} else *count = 0;
+	(*last_used) = rb_current_time();
+        if(!IsFloodDone(source_p))
+		flood_endgrace(source_p);
+	source_p->localClient->sent_parsed += ConfigFileEntry.penalty_simple*2;
+	return 1;
+}
+
+
 /*
  * check_client
  *
@@ -770,8 +813,11 @@ set_default_conf(void)
 	ConfigFileEntry.map_oper_only = NO;
 	ConfigFileEntry.operspy_admin_only = YES;
 	ConfigFileEntry.caller_id_wait = 60;
-	ConfigFileEntry.pace_wait = 2;
-	ConfigFileEntry.pace_wait_simple = 0;
+	ConfigFileEntry.penalty = 3;
+	ConfigFileEntry.penalty_simple = 1;
+	ConfigFileEntry.ratelimit_simple = 1;
+	ConfigFileEntry.ratelimit_count = 10;
+	ConfigFileEntry.ratelimit_simple_count = 100;
 	ConfigFileEntry.short_motd = NO;
 	ConfigFileEntry.no_oper_flood = NO;
 	ConfigFileEntry.default_invisible = NO;

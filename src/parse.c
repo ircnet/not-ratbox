@@ -41,14 +41,6 @@
 #include "s_serv.h"
 #include "uid.h"
 
-/*
- * NOTE: parse() should not be called recursively by other functions!
- */
-static char *sender;
-
-/* parv[0] == source, and parv[LAST] == NULL */
-static char *para[MAXPARA + 2];
-
 static void cancel_clients(struct Client *, struct Client *);
 static void remove_unknown(struct Client *, char *, char *);
 
@@ -156,6 +148,13 @@ char *array_to_string(const char *parv[], int parc, int uid2nick)
 void
 parse(struct Client *client_p, char *pbuffer, char *bufend)
 {
+	/*
+	 * NOTE: parse() should not be called recursively by other functions!
+	 */
+	char *sender;
+
+	/* parv[0] == source, and parv[LAST] == NULL */
+	char *para[MAXPARA + 2];
 	struct Client *from = client_p;
 	char *ch;
 	char *s;

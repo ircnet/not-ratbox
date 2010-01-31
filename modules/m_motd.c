@@ -66,16 +66,10 @@ static int
 m_motd(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static time_t last_used = 0;
+	static int count;
 
-	if((last_used + ConfigFileEntry.pace_wait_simple) > rb_current_time())
-	{
-		/* safe enough to give this on a local connect only */
-		sendto_one(source_p, form_str(RPL_LOAD2HI), me.name, source_p->name, "MOTD");
-		sendto_one(source_p, form_str(RPL_ENDOFMOTD), me.name, source_p->name);
+	if (!check_limit_simple(source_p, &last_used, &count, "MOTD"))
 		return 0;
-	}
-	else
-		last_used = rb_current_time();
 
 	if(hunt_server(client_p, source_p, ":%s MOTD :%s", 1, parc, parv) != HUNTED_ISME)
 		return 0;

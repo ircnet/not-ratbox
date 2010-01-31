@@ -91,6 +91,7 @@ static int
 m_who(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static time_t last_used = 0;
+	static int count;
 	struct Client *target_p;
 	struct membership *msptr;
 	char *mask;
@@ -215,18 +216,8 @@ m_who(struct Client *client_p, struct Client *source_p, int parc, const char *pa
 	if(!IsFloodDone(source_p))
 		flood_endgrace(source_p);
 
-	/* it has to be a global who at this point, limit it */
-	if(!IsOper(source_p))
-	{
-		if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
-		{
-			sendto_one(source_p, form_str(RPL_LOAD2HI), me.name, source_p->name, "WHO");
-			sendto_one(source_p, form_str(RPL_ENDOFWHO), me.name, source_p->name, "*");
-			return 0;
-		}
-		else
-			last_used = rb_current_time();
-	}
+	if (!check_limit(source_p, &last_used, &count, "WHO"))
+		return 0;
 
 	/* '/who 0' for a global list.  this forces clients to actually
 	 * request a full list.  I presume its because of too many typos

@@ -63,6 +63,7 @@ static int
 m_names(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static time_t last_used = 0;
+	static int count;
 	struct Channel *chptr = NULL;
 	char *s;
 
@@ -86,21 +87,8 @@ m_names(struct Client *client_p, struct Client *source_p, int parc, const char *
 	}
 	else
 	{
-		if(!IsOper(source_p))
-		{
-			if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
-			{
-				sendto_one(source_p, form_str(RPL_LOAD2HI),
-					   me.name, source_p->name, "NAMES");
-				sendto_one(source_p, form_str(RPL_ENDOFNAMES),
-					   me.name, source_p->name, "*");
-				return 0;
-			}
-			else
-				last_used = rb_current_time();
-		}
-
-		names_global(source_p);
+		if (check_limit(source_p, &last_used, &count, "NAMES"))
+			names_global(source_p);
 		sendto_one(source_p, form_str(RPL_ENDOFNAMES), me.name, source_p->name, "*");
 	}
 

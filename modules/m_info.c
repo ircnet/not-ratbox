@@ -619,16 +619,40 @@ static struct InfoStruct info_table[] = {
 		"Send +Z operspy notices to admins only"
 	},
 	{
-		"pace_wait",
+		"penalty",
 		OUTPUT_DECIMAL,
-		{ &ConfigFileEntry.pace_wait }, 
+		{ &ConfigFileEntry.penalty }, 
+		"Number of seconds to penalize users for usage of ratelimited commands"
+	},
+	{
+		"penalty_simple",
+		OUTPUT_DECIMAL,
+		{ &ConfigFileEntry.penalty_simple }, 
+		"Number of seconds to penalize users for usage of ratelimit_simple commands"
+	},
+	{
+		"ratelimit",
+		OUTPUT_DECIMAL,
+		{ &ConfigFileEntry.ratelimit }, 
 		"Minimum delay between uses of certain commands"
 	},
 	{
-		"pace_wait_simple",
+		"ratelimit_count",
 		OUTPUT_DECIMAL,
-		{ &ConfigFileEntry.pace_wait_simple }, 
+		{ &ConfigFileEntry.ratelimit_count }, 
+		"Number of times a command may be issued within ratelimit window"
+	},
+	{
+		"ratelimit_simple",
+		OUTPUT_DECIMAL,
+		{ &ConfigFileEntry.ratelimit_simple }, 
 		"Minimum delay between less intensive commands"
+	},
+	{
+		"ratelimit_simple_count",
+		OUTPUT_DECIMAL,
+		{ &ConfigFileEntry.ratelimit_simple_count }, 
+		"Number of times a command may be issued within ratelimit_simple window"
 	},
 	{
 		"ping_cookie",
@@ -871,16 +895,12 @@ static int
 m_info(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static time_t last_used = 0L;
+	static int count;
 
-	if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
-	{
-		/* safe enough to give this on a local connect only */
-		sendto_one(source_p, form_str(RPL_LOAD2HI), me.name, source_p->name, "INFO");
+	if (!check_limit(source_p, &last_used, &count, "INFO")) {
 		sendto_one_numeric(source_p, RPL_ENDOFINFO, form_str(RPL_ENDOFINFO));
 		return 0;
 	}
-	else
-		last_used = rb_current_time();
 
 	if(hunt_server(client_p, source_p, ":%s INFO :%s", 1, parc, parv) != HUNTED_ISME)
 		return 0;

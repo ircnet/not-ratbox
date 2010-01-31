@@ -172,8 +172,12 @@ struct config_file_entry
 	int stats_P_oper_only;
 	int map_oper_only;
 	int operspy_admin_only;
-	int pace_wait;
-	int pace_wait_simple;
+	int penalty;
+	int penalty_simple;
+	int ratelimit;
+	int ratelimit_count;
+	int ratelimit_simple;
+	int ratelimit_simple_count;
 	int short_motd;
 	int default_invisible;
 	int no_oper_flood;
@@ -324,6 +328,8 @@ void free_conf(struct ConfItem *);
 
 int attach_conf(struct Client *, struct ConfItem *);
 int check_client(struct Client *client_p, struct Client *source_p, const char *);
+int check_limit_simple(struct Client *source_p, time_t *last_used, int *count, const char *msg);
+int check_limit(struct Client *source_p, time_t *last_used, int *count, const char *msg);
 
 int detach_conf(struct Client *);
 

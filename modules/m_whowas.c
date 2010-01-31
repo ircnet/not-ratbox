@@ -64,21 +64,10 @@ m_whowas(struct Client *client_p, struct Client *source_p, int parc, const char 
 	char tbuf[26];
 
 	static time_t last_used = 0L;
+	static int count;
 
-	if(!IsOper(source_p))
-	{
-		if((last_used + ConfigFileEntry.pace_wait_simple) > rb_current_time())
-		{
-			sendto_one(source_p, form_str(RPL_LOAD2HI),
-				   me.name, source_p->name, "WHOWAS");
-			sendto_one(source_p, form_str(RPL_ENDOFWHOWAS),
-				   me.name, source_p->name, parv[1]);
-			return 0;
-		}
-		else
-			last_used = rb_current_time();
-	}
-
+	if (!check_limit_simple(source_p, &last_used, &count, "WHOWAS"))
+		return 0;
 
 	if(parc > 2)
 		max = atoi(parv[2]);

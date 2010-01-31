@@ -2486,8 +2486,14 @@ static struct conf_items conf_general_table[] =
 	{ "nick_delay",		CF_TIME,  NULL, 0, &ConfigFileEntry.nick_delay		},
 	{ "no_oper_flood",	CF_YESNO, NULL, 0, &ConfigFileEntry.no_oper_flood	},
 	{ "operspy_admin_only",	CF_YESNO, NULL, 0, &ConfigFileEntry.operspy_admin_only	},
-	{ "pace_wait",		CF_TIME,  NULL, 0, &ConfigFileEntry.pace_wait		},
-	{ "pace_wait_simple",	CF_TIME,  NULL, 0, &ConfigFileEntry.pace_wait_simple	},
+
+	{ "penalty",		CF_TIME,  NULL, 0, &ConfigFileEntry.penalty		},
+	{ "penalty_simple",	CF_TIME,  NULL, 0, &ConfigFileEntry.penalty_simple	},
+	{ "ratelimit",		CF_TIME,  NULL, 0, &ConfigFileEntry.ratelimit		},
+	{ "ratelimit_simple",	CF_TIME,  NULL, 0, &ConfigFileEntry.ratelimit_simple	},
+	{ "ratelimit_count",	CF_INT,  NULL, 0, &ConfigFileEntry.ratelimit_count	},
+	{ "ratelimit_simple_count",CF_INT,  NULL, 0, &ConfigFileEntry.ratelimit_simple_count },
+
 	{ "ping_cookie",	CF_YESNO, NULL, 0, &ConfigFileEntry.ping_cookie		},
 	{ "reject_after_count",	CF_INT,   NULL, 0, &ConfigFileEntry.reject_after_count	},
 	{ "reject_duration",	CF_TIME,  NULL, 0, &ConfigFileEntry.reject_duration	},
