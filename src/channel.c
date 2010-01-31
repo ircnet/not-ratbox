@@ -104,7 +104,8 @@ free_channel(struct Channel *chptr)
 struct Ban *
 allocate_ban(const char *banstr, const char *who)
 {
-	char *cwho = scache_find(who);
+	char *cwho = NULL;
+//scache_find(who);
 	struct Ban *bptr;
 	bptr = rb_bh_alloc(ban_heap);
 	bptr->banstr = rb_strndup(banstr, BANLEN);

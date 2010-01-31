@@ -769,9 +769,9 @@ set_default_conf(void)
 	ConfigFileEntry.stats_h_oper_only = NO;
 	ConfigFileEntry.map_oper_only = NO;
 	ConfigFileEntry.operspy_admin_only = YES;
-	ConfigFileEntry.pace_wait = 1;
 	ConfigFileEntry.caller_id_wait = 60;
-	ConfigFileEntry.pace_wait_simple = 1;
+	ConfigFileEntry.pace_wait = 2;
+	ConfigFileEntry.pace_wait_simple = 0;
 	ConfigFileEntry.short_motd = NO;
 	ConfigFileEntry.no_oper_flood = NO;
 	ConfigFileEntry.default_invisible = NO;

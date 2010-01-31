@@ -96,7 +96,7 @@ m_admin(struct Client *client_p, struct Client *source_p, int parc, const char *
 
 	if(parc > 1)
 	{
-		if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
+		if((last_used + ConfigFileEntry.pace_wait_simple) > rb_current_time())
 		{
 			sendto_one(source_p, form_str(RPL_LOAD2HI),
 				   me.name, source_p->name, "ADMIN");

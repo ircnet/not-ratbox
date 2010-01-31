@@ -201,7 +201,7 @@ m_stats(struct Client *client_p, struct Client *source_p, int parc, const char *
 	if(MyClient(source_p) && !IsOper(source_p))
 	{
 		/* Check the user is actually allowed to do /stats, and isnt flooding */
-		if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
+		if((last_used + ((parc>2)?ConfigFileEntry.pace_wait:ConfigFileEntry.pace_wait_simple)) > rb_current_time())
 		{
 			/* safe enough to give this on a local connect only */
 			sendto_one(source_p, form_str(RPL_LOAD2HI),
