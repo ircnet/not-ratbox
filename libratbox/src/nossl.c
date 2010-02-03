@@ -168,5 +168,11 @@ rb_get_ssl_info(char *buf, size_t len)
 {
         rb_snprintf(buf, len, "Not compiled with SSL support"); 
 }
+
+int
+rb_ssl_verify(char *buf, int len)
+{
+	return 0;
+}
                                                 
 #endif /* !HAVE_OPENSSL */

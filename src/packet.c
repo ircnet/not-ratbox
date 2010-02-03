@@ -52,6 +52,9 @@ parse_client_queued(struct Client *client_p)
 	if(IsAnyDead(client_p))
 		return;
 
+	if(IsBeingVerified(client_p))
+		return;
+
 	if(IsUnknown(client_p))
 	{
 		for(;;)

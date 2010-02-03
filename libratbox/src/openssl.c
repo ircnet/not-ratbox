@@ -285,10 +285,18 @@ int
 rb_init_ssl(void)
 {
 	int ret = 1;
+	static int inited = 0;
 	char libratbox_data[] = "libratbox data";
-	SSL_load_error_strings();
-	SSL_library_init();
-	libratbox_index = SSL_get_ex_new_index(0, libratbox_data, NULL, NULL, NULL);
+	if (!inited)
+	{
+		SSL_load_error_strings();
+		SSL_library_init();
+		libratbox_index = SSL_get_ex_new_index(0, libratbox_data, NULL, NULL, NULL);
+	} else {
+		/* This works ok as openssl does its own internal refcounting */
+		SSL_CTX_free(ssl_server_ctx);
+		SSL_CTX_free(ssl_client_ctx);
+	}
 	ssl_server_ctx = SSL_CTX_new(SSLv23_server_method());
 	if(ssl_server_ctx == NULL)
 	{
@@ -307,39 +315,60 @@ rb_init_ssl(void)
 			   ERR_error_string(ERR_get_error(), NULL));
 		ret = 0;
 	}
+
+	inited = 1;
+
 	return ret;
 }
 
-
 int
-rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile)
+rb_ssl_verify(rb_fde_t *F, char *buf, int len)
+{
+	X509 *cert;
+	int ret;
+	if ((ret = SSL_get_verify_result(F->ssl)) != 0) {
+		F->ssl_errno = ret;
+		return -1;
+	}
+	cert = SSL_get_peer_certificate(F->ssl);
+
+	if (!cert)
+		return 0;
+
+	return X509_NAME_get_text_by_NID(X509_get_subject_name(cert), NID_commonName, buf, len);	
+}
+
+
+
+static int
+rb_setup_ssl_keys(SSL_CTX * ctx, const char *cert, const char *keyfile, const char *dhfile)
 {
 	DH *dh;
 	unsigned long err;
 	if(cert == NULL)
 	{
-		rb_lib_log("rb_setup_ssl_server: No certificate file");
+		rb_lib_log("rb_setup_ssl_keys: No certificate file");
 		return 0;
 	}
-	if(!SSL_CTX_use_certificate_chain_file(ssl_server_ctx, cert))
+	if(!SSL_CTX_use_certificate_chain_file(ctx, cert))
 	{
 		err = ERR_get_error();
-		rb_lib_log("rb_setup_ssl_server: Error loading certificate file [%s]: %s", cert,
+		rb_lib_log("rb_setup_ssl_keys: Error loading certificate file [%s]: %s", cert,
 			   ERR_error_string(err, NULL));
 		return 0;
 	}
 
 	if(keyfile == NULL)
 	{
-		rb_lib_log("rb_setup_ssl_server: No key file");
+		rb_lib_log("rb_setup_ssl_keys: No key file");
 		return 0;
 	}
 
 
-	if(!SSL_CTX_use_PrivateKey_file(ssl_server_ctx, keyfile, SSL_FILETYPE_PEM))
+	if(!SSL_CTX_use_PrivateKey_file(ctx, keyfile, SSL_FILETYPE_PEM))
 	{
 		err = ERR_get_error();
-		rb_lib_log("rb_setup_ssl_server: Error loading keyfile [%s]: %s", keyfile,
+		rb_lib_log("rb_setup_ssl_keys: Error loading keyfile [%s]: %s", keyfile,
 			   ERR_error_string(err, NULL));
 		return 0;
 	}
@@ -355,21 +384,39 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile)
 			{
 				err = ERR_get_error();
 				rb_lib_log
-					("rb_setup_ssl_server: Error loading DH params file [%s]: %s",
+					("rb_setup_ssl_keys: Error loading DH params file [%s]: %s",
 					 dhfile, ERR_error_string(err, NULL));
 				BIO_free(bio);
 				return 0;
 			}
 			BIO_free(bio);
-			SSL_CTX_set_tmp_dh(ssl_server_ctx, dh);
+			SSL_CTX_set_tmp_dh(ctx, dh);
 		}
 		else
 		{
 			err = ERR_get_error();
-			rb_lib_log("rb_setup_ssl_server: Error loading DH params file [%s]: %s",
+			rb_lib_log("rb_setup_ssl_keys: Error loading DH params file [%s]: %s",
 				   dhfile, ERR_error_string(err, NULL));
 		}
 	}
+
+	/* XXX check if this fails? none of this is fatal though.. */
+	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER|SSL_VERIFY_CLIENT_ONCE, NULL);
+	SSL_CTX_set_verify_depth(ctx, 10);
+	SSL_CTX_load_verify_locations(ctx, cert, NULL);
+	return 1;
+}
+
+int
+rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile)
+{
+	if (!rb_init_ssl())
+		return 0;
+	if (!rb_setup_ssl_keys(ssl_server_ctx, cert, keyfile, dhfile))
+		return 0;
+	if (!rb_setup_ssl_keys(ssl_client_ctx, cert, keyfile, dhfile))
+		return 0;
+
 	return 1;
 }
 

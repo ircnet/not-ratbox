@@ -767,6 +767,50 @@ ssl_process_connect(mod_ctl_t * ctl, mod_ctl_buf_t * ctlb)
 }
 
 static void
+ssl_process_verify(mod_ctl_t *ctl, mod_ctl_buf_t *ctlb)
+{
+	char buf[512];
+	char vbuf[256];
+	int i;
+	conn_t *conn;
+	int32_t id;
+	int ret;
+
+	id = buf_to_int32(&ctlb->buf[1]);
+
+	if(id < 0)
+		return;
+
+	conn = conn_find_by_id(id);
+	if (!conn)
+		return;
+
+	vbuf[0] = 0;
+	ret = rb_ssl_verify(conn->mod_fd, vbuf, sizeof(vbuf)-1);
+
+	/* XXX more sensible error reporting? */
+	if (ret < 0) {
+		if (ret == -2)
+			close_conn(conn, WAIT_PLAIN, "Peer certificate expired");
+		if (ret == -3)
+			close_conn(conn, WAIT_PLAIN, "Peer certificate is yet to be activated");
+		close_conn(conn, WAIT_PLAIN, rb_get_ssl_strerror(conn->mod_fd));
+		return;
+	}
+
+	/* Prevent zero-prepended cert hacking */
+	for (i = 0; i < ret; i++)
+		if (vbuf[i] == 0)
+			vbuf[i] = '.';
+	vbuf[i] = 0;
+
+	buf[0] = 'V';
+	int32_to_buf(&buf[1], conn->id);
+	memcpy(&buf[5], vbuf, ret + 1);
+	mod_cmd_write_queue(conn->ctl, buf, ret + 6); /* asciiz */
+}
+
+static void
 process_stats(mod_ctl_t * ctl, mod_ctl_buf_t * ctlb)
 {
 	char outstat[512];
@@ -987,6 +1031,22 @@ mod_process_cmd_recv(mod_ctl_t * ctl)
 					break;
 				}
 				ssl_process_connect(ctl, ctl_buf);
+				break;
+			}
+		case 'V':
+			{
+				if (ctl_buf->buflen != 5)
+				{
+					cleanup_bad_message(ctl, ctl_buf);
+					break;
+				}
+
+				if(!ssl_ok)
+				{
+					send_nossl_support(ctl, ctl_buf);
+					break;
+				}
+				ssl_process_verify(ctl, ctl_buf);
 				break;
 			}
 

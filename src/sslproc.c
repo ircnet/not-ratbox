@@ -26,6 +26,7 @@
 
 
 #include "s_conf.h"
+#include "s_newconf.h"
 #include "s_log.h"
 #include "listener.h"
 #include "struct.h"
@@ -36,6 +37,7 @@
 #include "client.h"
 #include "send.h"
 #include "packet.h"
+#include "match.h"
 
 #define ZIPSTATS_TIME           60
 
@@ -406,6 +408,33 @@ ssl_process_dead_fd(ssl_ctl_t * ctl, ssl_ctl_buf_t * ctl_buf)
 	}
 	exit_client(client_p, client_p, &me, reason);
 }
+static void
+ssl_process_verify(ssl_ctl_t * ctl, ssl_ctl_buf_t * ctl_buf)
+{
+	struct Client *client_p;
+	char cname[256];
+	char *svname;
+	int32_t fd;
+
+	if(ctl_buf->buflen < 6)
+		return;		/* bogus message..drop it.. XXX should warn here */
+
+	fd = buf_to_int32(&ctl_buf->buf[1]);
+	rb_strlcpy(cname, &ctl_buf->buf[5], sizeof(cname));
+	client_p = find_cli_fd_hash(fd);
+	if(client_p == NULL)
+		return;
+	if (!client_p->localClient->att_sconf)
+		return;
+	svname = client_p->localClient->att_sconf->name;
+	if (!match(svname, cname))
+	{
+		sendto_realops_flags(UMODE_ALL, L_ALL, "CN %s does not match server name %s", cname, svname);
+		exit_client(client_p, client_p, &me, "CN/servername certificate mismatch");
+		return;
+	}
+	SetVerified(client_p);
+}
 
 static void
 ssl_process_cmd_recv(ssl_ctl_t * ctl)
@@ -442,6 +471,9 @@ ssl_process_cmd_recv(ssl_ctl_t * ctl)
 			ilog(L_MAIN, no_ssl_or_zlib);
 			sendto_realops_flags(UMODE_ALL, L_ALL, no_ssl_or_zlib);
 			ssl_killall();
+			break;
+		case 'V':
+			ssl_process_verify(ctl, ctl_buf);
 			break;
 		case 'z':
 			zlib_ok = 0;
@@ -839,6 +871,24 @@ cleanup_dead_ssl(void *unused)
 			free_ssl_daemon(ctl);
 		}
 	}
+}
+
+void start_verify_ssl(struct Client *target_p)
+{
+	char buf[5];
+
+	if (!IsSSL(target_p))
+		return;
+
+	if (!target_p->localClient->ssl_ctl)
+		return;
+
+	/* stop further parsing until we know it's ok */
+	SetBeingVerified(target_p);
+
+	buf[0] = 'V';
+	int32_to_buf(&buf[1], rb_get_fd(target_p->localClient->F));
+	ssl_cmd_write_queue(target_p->localClient->ssl_ctl, NULL, 0, buf, 5);
 }
 
 int

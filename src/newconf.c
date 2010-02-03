@@ -193,6 +193,7 @@ static struct mode_table connect_table[] = {
 	{ "compressed",	SERVER_COMPRESSED	},
 	{ "encrypted",	SERVER_ENCRYPTED	},
 	{ "ssl",	SERVER_SSL		},
+	{ "dont_verify",SERVER_DONTVERIFY	},
 	{ "topicburst",	SERVER_TB		},
 	{ "service",	SERVER_SVC		},
 	{ "want_burst",	SERVER_SVCBURST		},

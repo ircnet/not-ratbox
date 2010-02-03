@@ -49,6 +49,7 @@ rb_setup_fd
 rb_setup_ssl_server
 rb_socket
 rb_socketpair
+rb_ssl_verify
 rb_ssl_listen
 rb_ssl_start_accepted
 rb_ssl_start_connected

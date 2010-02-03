@@ -158,6 +158,7 @@ struct LocalUser;
 #define LFLAGS_FLUSH		0x00000002
 #define LFLAGS_CORK		0x00000004
 #define LFLAGS_SENTUSER		0x00000008
+#define LFLAGS_VERIFYING	0x00000010
 
 /* umodes, settable flags */
 
@@ -246,6 +247,12 @@ struct LocalUser;
 
 #define HasSentUser(x)		((x)->localClient->localflags & LFLAGS_SENTUSER)
 #define SetSentUser(x)		((x)->localClient->localflags |= LFLAGS_SENTUSER)
+
+#define IsBeingVerified(x)	((x)->localClient->localflags & LFLAGS_VERIFYING)
+#define SetBeingVerified(x)	((x)->localClient->localflags |= LFLAGS_VERIFYING)
+#define SetVerified(x)		((x)->localClient->localflags &= ~LFLAGS_VERIFYING)
+
+
 
 
 /* oper flags */

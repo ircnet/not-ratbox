@@ -30,12 +30,19 @@
 #ifdef HAVE_GNUTLS
 
 #include <gnutls/gnutls.h>
+#include <gnutls/x509.h>
 #include <gcrypt.h>
 
 static gnutls_certificate_credentials x509;
+static gnutls_anon_client_credentials_t c_anoncred;
 static gnutls_dh_params dh_params;
 
-
+static const int kx_prio[16] =
+{
+  GNUTLS_KX_RSA, GNUTLS_KX_DHE_DSS, GNUTLS_KX_DHE_RSA,
+  GNUTLS_KX_ANON_DH,
+  GNUTLS_KX_RSA_EXPORT, 0
+};
 
 #define SSL_P(x) *((gnutls_session_t *)F->ssl)
 
@@ -75,7 +82,7 @@ rb_ssl_timeout(rb_fde_t *F, void *notused)
 
 
 static int
-do_ssl_handshake(rb_fde_t *F, PF * callback)
+do_ssl_handshake(rb_fde_t *F, PF * callback, void *data)
 {
 	int ret;
 	int flags;
@@ -89,7 +96,7 @@ do_ssl_handshake(rb_fde_t *F, PF * callback)
 				flags = RB_SELECT_READ;
 			else
 				flags = RB_SELECT_WRITE;
-			rb_setselect(F, flags, callback, NULL);
+			rb_setselect(F, flags, callback, data);
 			return 0;
 		}
 		F->ssl_errno = ret;
@@ -106,7 +113,7 @@ rb_ssl_tryaccept(rb_fde_t *F, void *data)
 
 	lrb_assert(F->accept != NULL);
 
-	ret = do_ssl_handshake(F, rb_ssl_tryaccept);
+	ret = do_ssl_handshake(F, rb_ssl_tryaccept, NULL);
 
 	/* do_ssl_handshake does the rb_setselect */
 	if(ret == 0)
@@ -142,9 +149,9 @@ rb_ssl_start_accepted(rb_fde_t *new_F, ACCB * cb, void *data, int timeout)
 	gnutls_init(ssl, GNUTLS_SERVER);
 	gnutls_set_default_priority(*ssl);
 	gnutls_credentials_set(*ssl, GNUTLS_CRD_CERTIFICATE, x509);
-	gnutls_dh_set_prime_bits(*ssl, 1024);
-	gnutls_transport_set_ptr(*ssl, (gnutls_transport_ptr_t) (long int)new_F->fd);
-	if(do_ssl_handshake(new_F, rb_ssl_tryaccept))
+	gnutls_dh_set_prime_bits(*ssl, 384);
+	gnutls_transport_set_ptr(*ssl, (gnutls_transport_ptr_t) (long int) rb_get_fd(new_F));
+	if(do_ssl_handshake(new_F, rb_ssl_tryaccept, NULL))
 	{
 		struct acceptdata *ad = new_F->accept;
 		new_F->accept = NULL;
@@ -173,9 +180,9 @@ rb_ssl_accept_setup(rb_fde_t *F, rb_fde_t *new_F, struct sockaddr *st, int addrl
 	gnutls_init((gnutls_session_t *) new_F->ssl, GNUTLS_SERVER);
 	gnutls_set_default_priority(SSL_P(new_F));
 	gnutls_credentials_set(SSL_P(new_F), GNUTLS_CRD_CERTIFICATE, x509);
-	gnutls_dh_set_prime_bits(SSL_P(new_F), 1024);
-	gnutls_transport_set_ptr(SSL_P(new_F), (gnutls_transport_ptr_t) (long int)rb_get_fd(new_F));
-	if(do_ssl_handshake(F, rb_ssl_tryaccept))
+	gnutls_dh_set_prime_bits(SSL_P(new_F), 384);
+	gnutls_transport_set_ptr(SSL_P(new_F), (gnutls_transport_ptr_t) (long int) rb_get_fd(new_F));
+	if(do_ssl_handshake(F, rb_ssl_tryaccept, NULL))
 	{
 		struct acceptdata *ad = F->accept;
 		F->accept = NULL;
@@ -243,6 +250,7 @@ int
 rb_init_ssl(void)
 {
 	gnutls_global_init();
+	gnutls_anon_allocate_client_credentials(&c_anoncred);
 
 	if(gnutls_certificate_allocate_credentials(&x509) != GNUTLS_E_SUCCESS)
 	{
@@ -289,6 +297,9 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile)
 {
 	int ret;
 	gnutls_datum_t *d_cert, *d_key;
+
+	gnutls_certificate_free_cas(x509);
+
 	if(cert == NULL)
 	{
 		rb_lib_log("rb_setup_ssl_server: No certificate file");
@@ -316,6 +327,9 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile)
 			   gnutls_strerror(ret));
 		return 0;
 	}
+
+	gnutls_certificate_set_x509_trust_file(x509, cert, GNUTLS_X509_FMT_PEM);
+
 	rb_free_datum_t(d_cert);
 	rb_free_datum_t(d_key);
 
@@ -343,6 +357,53 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile)
 	}
 	return 1;
 }
+
+int rb_ssl_verify(rb_fde_t *F, char *buf, int len)
+{
+	int ret;
+	unsigned int certlsz;
+	const gnutls_datum_t *cert_list;
+	gnutls_x509_crt_t cert;
+	unsigned int status;
+	time_t now = rb_current_time();
+
+	if ((ret = gnutls_certificate_verify_peers2 (F->ssl, &status))) {
+		F->ssl_errno = ret;
+		return -1;
+	}
+
+	if (status & GNUTLS_CERT_INVALID)
+		return 0;
+
+	if (gnutls_certificate_type_get (F->ssl) != GNUTLS_CRT_X509)
+		return 0;
+
+	if ((ret = gnutls_x509_crt_init(&cert))) {
+		F->ssl_errno = ret;
+		return -1;
+	}
+
+	cert_list = gnutls_certificate_get_peers(F->ssl, &certlsz);
+
+	if (!cert_list)
+		return 0;
+
+	if (gnutls_x509_crt_import (cert, &cert_list[0], GNUTLS_X509_FMT_DER) < 0)
+		return 0;
+
+	if ((ret = gnutls_x509_crt_get_dn_by_oid(cert, GNUTLS_OID_X520_COMMON_NAME, 0, 0, buf, (size_t *) &len))) {
+		F->ssl_errno = ret;
+		return -1;
+	}
+
+	if (gnutls_x509_crt_get_expiration_time(cert) < now)
+		return -2;
+	if (gnutls_x509_crt_get_activation_time(cert) > now)
+		return -3;
+
+	return 0;
+}
+
 
 int
 rb_ssl_listen(rb_fde_t *F, int backlog)
@@ -379,13 +440,13 @@ rb_ssl_tryconn_cb(rb_fde_t *F, void *data)
 	struct ssl_connect *sconn = data;
 	int ret;
 
-	ret = do_ssl_handshake(F, rb_ssl_tryconn_cb);
+	ret = do_ssl_handshake(F, rb_ssl_tryconn_cb, data);
 
 	switch (ret)
 	{
 	case -1:
 		rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
-		break;
+		return;
 	case 0:
 		/* do_ssl_handshake does the rb_setselect stuff */
 		return;
@@ -414,10 +475,13 @@ rb_ssl_tryconn(rb_fde_t *F, int status, void *data)
 	F->ssl = rb_malloc(sizeof(gnutls_session_t));
 	gnutls_init(F->ssl, GNUTLS_CLIENT);
 	gnutls_set_default_priority(SSL_P(F));
-	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
-	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int)F->fd);
+	gnutls_kx_set_priority (SSL_P(F), kx_prio);
+//	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_ANON, c_anoncred);
+	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, x509);
+	gnutls_dh_set_prime_bits(SSL_P(F), 384);
+	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int) rb_get_fd(F));
 
-	if(do_ssl_handshake(F, rb_ssl_tryconn_cb))
+	if(do_ssl_handshake(F, rb_ssl_tryconn_cb, sconn))
 	{
 		rb_ssl_connect_realcb(F, RB_OK, sconn);
 	}
@@ -458,12 +522,16 @@ rb_ssl_start_connected(rb_fde_t *F, CNCB * callback, void *data, int timeout)
 
 	gnutls_init(F->ssl, GNUTLS_CLIENT);
 	gnutls_set_default_priority(SSL_P(F));
-	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
-	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int)F->fd);
+//	gnutls_kx_set_priority (SSL_P(F), kx_prio);
+//	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_ANON, c_anoncred);
+	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, x509);
+	gnutls_dh_set_prime_bits(SSL_P(F), 384);
+	gnutls_certificate_server_set_request(SSL_P(F), GNUTLS_CERT_REQUEST);
+	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int) rb_get_fd(F));
 
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 
-	if(do_ssl_handshake(F, rb_ssl_tryconn_cb))
+	if(do_ssl_handshake(F, rb_ssl_tryconn_cb, sconn))
 	{
 		rb_ssl_connect_realcb(F, RB_OK, sconn);
 	}

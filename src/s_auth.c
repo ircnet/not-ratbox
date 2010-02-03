@@ -395,17 +395,17 @@ start_auth(struct Client *client)
 	 * before the call to start_auth_query, otherwise you'll have
 	 * the same thing.  So think before you hack 
 	 */
-	SetDNS(auth);		/* set both at the same time to eliminate possible race conditions */
-	SetAuth(auth);
-	if(ConfigFileEntry.disable_auth == 0)
+	if (ConfigFileEntry.disable_auth)
 	{
-		start_auth_query(auth);
-	}
-	else {
 		rb_free(client->localClient->lip);
 		client->localClient->lip = NULL;
 		ClearAuth(auth);
+		release_auth_client(auth);
+		return;
 	}
+	SetDNS(auth);		/* set both at the same time to eliminate possible race conditions */
+	SetAuth(auth);
+	start_auth_query(auth);
 	auth->dns_query =
 		lookup_ip(client->sockhost, GET_SS_FAMILY(&client->localClient->ip),
 			  auth_dns_callback, auth);

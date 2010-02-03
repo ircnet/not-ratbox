@@ -9,14 +9,14 @@ echo "[+] Creating ratbox instance $1:$2"
 sid=`echo $2 | cut -b 3-`
 fn=$1.ratbox.conf
 cat <<_eof > $fn
-serverinfo { name = "$1"; sid = "$SIDBASE$sid"; description = "$1 ratbox test server"; network_name = "IRCNet"; hub = yes; };
-listen { port = $2; };
+serverinfo { name = "$1"; sid = "$SIDBASE$sid"; description = "$1 ratbox test server"; network_name = "IRCNet"; hub = yes; ssl_private_key="`pwd`/$1.key"; ssl_cert="`pwd`/$1.cert"; ssl_dh_params="`pwd`/dh.pem"; };
+listen { sslport = $2; };
 class "users" { ping_time = 2 minutes; number_per_ident = 2; number_per_ip = 3; number_per_ip_global = 5; number_per_cidr = 4; max_number = 100; sendq = 100 kbytes; };
-class "server" { ping_time = 5 minutes; connectfreq = 5 seconds; max_number = 10; sendq=2 megabytes; };
+class "server" { ping_time = 10 seconds; connectfreq = 5 seconds; max_number = 10; sendq=50 megabytes; };
 auth { user = "*@*"; class = "users"; };
 operator "$OPERNAME" { user = "*@127.0.0.1"; password = "$PASS"; flags =  global_kill, remote, kline, unkline, gline,die, rehash, admin, xline, operwall, ~encrypted, oper_spy; };
 channel { delay = 30; reop = 1; };
-general { throttle_count = 9999; collision_fnc = yes; burst_away = yes;
+general { throttle_count = 9999; collision_fnc = yes; burst_away = yes; disable_auth = yes;
 oper_only_umodes = bots, cconn, debug, full, skill, nchange, rej, spy, external, operwall, locops, unauth;
 oper_umodes = locops, servnotice, operwall, wallop;
 };
@@ -36,7 +36,7 @@ for i in $3; do
 	if [ ! -z "$port" ]; then
 		echo "  >>> Adding connect to $host:$port (mask:$mask)"
 		echo "port = $port;" >> $fn
-		echo "flags = autoconn, compat211;" >> $fn
+		echo "flags = autoconn, compat211, ssl;" >> $fn
 	fi
 	if [ ! -z "$mask" ]; then
 		echo "mask=\"$mask\";" >> $fn

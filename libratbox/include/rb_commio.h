@@ -162,6 +162,7 @@ typedef enum
 	RB_PRNG_DEFAULT,
 } prng_seed_t;
 
+int rb_ssl_verify(rb_fde_t *F, char *buf, int len);
 int rb_init_prng(const char *path, prng_seed_t seed_type);
 int rb_get_random(void *buf, size_t len);
 int rb_get_pseudo_random(void *buf, size_t len);
