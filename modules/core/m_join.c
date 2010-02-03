@@ -744,8 +744,25 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 
 	/* In case the channel is empty and there is an user coming from a netjoin,
 	 * reset our modes as he'll be setting the authoritative ones.
-	 * This will prevent long-term split servers from bouncing
-	 * stale modes back.
+	 * This is very important thing to do, otherwise split servers
+	 * with no users would be just accumulating BMASKs ad infinitum.
+	 * and huge desynchs would occur.
+	 *
+	 * Note that this creates a race window as per following:
+	 * irc1(users) - irc2(nousers)
+	 * when users are propagated to irc2, theres a tiny race window
+	 * for local or further routed user to join right before
+	 * bmasks are observed.
+	 * Exploiting this to get past +b is non-trivial, as it would
+	 * requiere perfect timing to slowdown irc1 whilst bursting 
+	 * the channel attacked.
+	 *
+	 * Closing this hole would involve marking the channel with lock
+	 * which would be cleared by lock's issuers EOB, until it's
+	 * observed that this is indeed possible to exploit, its redundant imho.
+	 * 
+	 * (+ikl will never be reset as every incoming SJOIN is also
+	 * a carrier of simple modes) --sd
 	 */
 	if (keep_new_modes && rb_dlink_list_length(&chptr->members) <= 0)
 		keep_our_modes = NO;
