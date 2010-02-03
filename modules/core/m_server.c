@@ -293,9 +293,6 @@ static void introduce_server(struct Client *client_p, struct Client *source_p, s
 		}
 	} else
 #endif
-	sendto_realops_flags(UMODE_ALL, L_ALL,
-			     "introducing to %s[%s], introduced %s[%s] => %s", client_p->name, client_p->id, server_p->name, server_p->id, server_p->serv->realname?server_p->serv->realname:"[none]");
-
 	if (server_p->serv->realname || (ServerConfMask(client_p->localClient->att_sconf, server_p->name) != server_p->name))
 	{
 		sendto_one(client_p, ":%s SID %s %d %s :[%s]%s",
@@ -375,9 +372,6 @@ static	void	set_gecos(struct Client *server_p, const char *name)
 {
 	char realname[HOSTLEN+1];
 	const char *p = strchr(name, ']');
-
-	sendto_realops_flags(UMODE_ALL, L_ALL,
-			     "setting gecos for %s[%s] to %s", server_p->name, server_p->id, name);
 
 	if (name[0] == '[' && p && (p-name) < HOSTLEN) {
 		rb_strlcpy(realname, name+1, p-name);
@@ -609,7 +603,7 @@ check_server(const char *name, struct Client *client_p)
 
 		/* XXX: Fix me for IPv6 */
 		/* XXX sockhost is the IPv4 ip as a string */
-		if(match(tmp_p->host, client_p->host) || match(tmp_p->host, client_p->sockhost))
+		if(ServerConfTrusted(tmp_p) || (match(tmp_p->host, client_p->host) || match(tmp_p->host, client_p->sockhost)))
 		{
 			error = INVALID_PASS;
 
@@ -636,6 +630,11 @@ check_server(const char *name, struct Client *client_p)
 	if(ServerConfSSL(server_p) && client_p->localClient->ssl_ctl == NULL)
 	{
 		return NEED_SSL;
+	}
+
+	if (ServerConfTrusted(server_p))
+	{
+		start_verify_ssl(client_p);
 	}
 
 	attach_server_conf(client_p, server_p);
