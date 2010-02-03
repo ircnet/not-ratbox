@@ -596,14 +596,14 @@ check_server(const char *name, struct Client *client_p)
 		if(ServerConfIllegal(tmp_p))
 			continue;
 
-		if(!match(name, tmp_p->name))
+		if(irccmp(name, tmp_p->name))
 			continue;
 
 		error = INVALID_HOST;
 
 		/* XXX: Fix me for IPv6 */
 		/* XXX sockhost is the IPv4 ip as a string */
-		if(ServerConfTrusted(tmp_p) || (match(tmp_p->host, client_p->host) || match(tmp_p->host, client_p->sockhost)))
+		if(match(tmp_p->host, client_p->host) || match(tmp_p->host, client_p->sockhost))
 		{
 			error = INVALID_PASS;
 
