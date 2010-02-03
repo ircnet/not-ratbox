@@ -553,7 +553,7 @@ ms_njoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 	fakeparv[0] = parv[0];
 	fakeparv[1] = "0";
 	fakeparv[2] = parv[1];
-	fakeparv[3] = "+";
+	fakeparv[3] = "0";
 	fakeparv[4] = parv[2];
 	fakeparv[5] = NULL;
 	return ms_sjoin(client_p, source_p, 5, fakeparv);
