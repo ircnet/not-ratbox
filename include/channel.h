@@ -258,5 +258,4 @@ void send_cap_mode_changes(struct Client *client_p, struct Client *source_p,
 
 
 struct	Ban *match_ban(rb_dlink_list *bl, struct Client *who, char *nuhs, int init);
-void	expire_chandelay(void *unused);
 #endif /* INCLUDED_channel_h */

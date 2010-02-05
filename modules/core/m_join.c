@@ -69,7 +69,7 @@ mapi_clist_av2 join_clist[] = { &join_msgtab, &sjoin_msgtab,
 #endif
  NULL };
 
-static struct ev_entry *expire_stale_bans_ev;
+static struct ev_entry *expire_channels_ev;
 static int modinit(void);
 static void moddeinit(void);
 
@@ -1451,21 +1451,85 @@ kill_ban_lists(struct Channel *chptr, struct Client *source_p, int onlymarked)
 	remove_ban_list(chptr, source_p, &chptr->reoplist, 'R', CAP_IRCNET, ALL_MEMBERS, onlymarked);
 }
 
-static void expire_stale_bans(void *unused)
+/* try to find the least idle client and give it +o */
+static void	reop_channel(struct Channel *chptr)
 {
+	struct membership *msptr;
+	struct membership *notidler = NULL;
+	struct membership *matched = NULL;
+	char enforcing = 'r';
 	rb_dlink_node *ptr;
-	RB_DLINK_FOREACH(ptr, global_channel_list.head)
+
+	RB_DLINK_FOREACH(ptr, chptr->members.head)
+	{
+		msptr = ptr->data;
+		if (is_chanop(msptr)) {
+			chptr->chlock = chptr->reop = 0;
+			/* no reop needed */
+			return;
+		}
+		if (!MyClient(msptr->client_p))
+			continue;
+		if (!notidler ||
+			notidler->client_p->localClient->lasttime < msptr->client_p->localClient->lasttime)
+		{
+			notidler = msptr;
+		}
+
+		if ((!matched ||
+			(matched->client_p->localClient->lasttime < msptr->client_p->localClient->lasttime)) &&
+			match_ban(&chptr->reoplist, msptr->client_p, NULL, 0))
+		{
+			matched = msptr;
+		}
+	}
+	if (matched) {
+		enforcing = 'R';
+	} else if (chptr->mode.mode & MODE_REOP) {
+		matched = notidler;
+	}
+	if (matched) {
+		sendto_channel_flags(&me, ALL_MEMBERS, &me, chptr, "NOTICE %s :Enforcing channel mode +%c (%ld)",
+			chptr->chname, enforcing, (rb_current_time() - chptr->reop) / 60);
+		matched->flags |= CHFL_CHANOP;
+		sendto_channel_local(ALL_MEMBERS, chptr, ":%s MODE %s +o %s",
+			me.name, chptr->chname, Anon(matched->client_p->name));
+		sendto_server(&me, chptr, CAP_TS6, NOCAPS, ":%s TMODE %ld %s +o %s",
+			me.id, (long)chptr->channelts, chptr->chname, matched->client_p->name);
+		chptr->reop = chptr->chlock = 0;
+		return;
+	}
+	return;
+}
+
+static void	expire_channels(void *unused)
+{
+	rb_dlink_node *ptr, *next_ptr;
+	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, global_channel_list.head)
 	{
 		struct Channel *chptr = ptr->data;
+
 		if (!chptr->sidmap)
 			kill_ban_lists(chptr, &me, 1);
+
+		if (rb_dlink_list_length(&chptr->members) <= 0)
+			destroy_channel(chptr);
+		else if (ConfigChannel.reop) {
+			/* if ops were lost in netsplit, wait for delay to expire. */
+			if (chptr->reop &&
+				(chptr->reop + ConfigChannel.reop < rb_current_time()) &&
+				!HasHistory(chptr))
+			{
+				reop_channel(chptr);
+			}
+		}
 	}
 }
 
 static int
 modinit(void)
 {
-	expire_stale_bans_ev = rb_event_addish("expire_stale_bans", expire_stale_bans, NULL,
+	expire_channels_ev = rb_event_addish("expire_channels", expire_channels, NULL,
 					   120);
 	return 0;
 }
@@ -1473,5 +1537,7 @@ modinit(void)
 static void
 moddeinit(void)
 {
-	rb_event_delete(expire_stale_bans_ev);
+	rb_event_delete(expire_channels_ev);
 }
+
+
