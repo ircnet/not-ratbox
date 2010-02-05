@@ -69,7 +69,11 @@ mapi_clist_av2 join_clist[] = { &join_msgtab, &sjoin_msgtab,
 #endif
  NULL };
 
-DECLARE_MODULE_AV2(join, NULL, NULL, join_clist, NULL, NULL, "$Revision$");
+static struct ev_entry *expire_stale_bans_ev;
+static int modinit(void);
+static void moddeinit(void);
+
+DECLARE_MODULE_AV2(join, modinit, moddeinit, join_clist, NULL, NULL, "$Revision$");
 
 static void do_join_0(struct Client *client_p, struct Client *source_p);
 
@@ -78,7 +82,10 @@ static int can_join(struct Client *source_p, struct Channel *chptr, char *key);
 static void set_final_mode(struct Client *, struct Channel *, struct Mode *, struct Mode *);
 static void remove_our_modes(struct Channel *chptr);
 static void remove_ban_list(struct Channel *chptr, struct Client *source_p,
-			    rb_dlink_list *list, char c, int cap, int mems);
+			    rb_dlink_list *list, char c, int cap, int mems, int onlymarked);
+static void mark_ban_lists(struct Channel *chptr);
+static void kill_ban_lists(struct Channel *chptr, struct Client *source_p, int onlymarked);
+
 
 /*
  * m_join
@@ -720,6 +727,32 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 	else
 		keep_new_modes = NO;
 
+	/* In case the channel is empty and there is an user coming from a netjoin,
+	 * reset our modes as he'll be setting the authoritative ones.
+	 * This is very important thing to do, otherwise split servers
+	 * with no users would be just accumulating BMASKs ad infinitum.
+	 * and huge desynchs would occur.
+	 *
+	 * Note that this creates a race window as per following:
+	 * irc1(users) - irc2(nousers)
+	 * when users are propagated to irc2, there is a tiny race window
+	 * for local or further routed user to join right before
+	 * BMASKs are observed.
+	 *
+	 * To prevent this exploit, we will mark all of our bans ->when field
+	 * with 0 (will be restored if the same remote ban is observed coming
+	 * from somewhere) and flush these periodically when such a channel is
+	 * no longer sidmapped.
+	 * 
+	 * (+ikl will never be an issue as every incoming SJOIN is also
+	 * a carrier of simple modes) --sd
+	 */
+	if (keep_new_modes && keep_our_modes && rb_dlink_list_length(&chptr->members) <= 0)
+	{
+		mark_ban_lists(chptr);
+		keep_our_modes = NO;
+	}
+
 	if(!keep_new_modes)
 		mode = *oldmode;
 	else if(keep_our_modes)
@@ -741,31 +774,6 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 				     me.name, chptr->chname, chptr->chname,
 				     (long)oldts, (long)newts);
 	}
-
-	/* In case the channel is empty and there is an user coming from a netjoin,
-	 * reset our modes as he'll be setting the authoritative ones.
-	 * This is very important thing to do, otherwise split servers
-	 * with no users would be just accumulating BMASKs ad infinitum.
-	 * and huge desynchs would occur.
-	 *
-	 * Note that this creates a race window as per following:
-	 * irc1(users) - irc2(nousers)
-	 * when users are propagated to irc2, theres a tiny race window
-	 * for local or further routed user to join right before
-	 * bmasks are observed.
-	 * Exploiting this to get past +b is non-trivial, as it would
-	 * requiere perfect timing to slowdown irc1 whilst bursting 
-	 * the channel attacked.
-	 *
-	 * Closing this hole would involve marking the channel with lock
-	 * which would be cleared by lock's issuers EOB, until it's
-	 * observed that this is indeed possible to exploit, its redundant imho.
-	 * 
-	 * (+ikl will never be reset as every incoming SJOIN is also
-	 * a carrier of simple modes) --sd
-	 */
-	if (keep_new_modes && rb_dlink_list_length(&chptr->members) <= 0)
-		keep_our_modes = NO;
 
 	set_final_mode(source_p, chptr, &mode, oldmode);
 	chptr->mode = mode;
@@ -983,29 +991,10 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 			source_p->name, chptr->chname, modes);
 #endif
 
-	/* if the source does TS6 we have to remove our bans.  Its now safe
-	 * to issue -b's to the non-ts6 servers, as the sjoin we've just
-	 * sent will kill any ops they have.
-	 */
-	if(!keep_our_modes && source_p->id[0] != '\0')
-	{
-		if(rb_dlink_list_length(&chptr->banlist) > 0)
-			remove_ban_list(chptr, source_p, &chptr->banlist, 'b', NOCAPS, ALL_MEMBERS);
 
-		if(rb_dlink_list_length(&chptr->exceptlist) > 0)
-			remove_ban_list(chptr, source_p, &chptr->exceptlist,
-					'e', CAP_EX, ONLY_CHANOPS);
-
-		if(rb_dlink_list_length(&chptr->invexlist) > 0)
-			remove_ban_list(chptr, source_p, &chptr->invexlist,
-					'I', CAP_IE, ONLY_CHANOPS);
-
-		if(rb_dlink_list_length(&chptr->reoplist) > 0)
-			remove_ban_list(chptr, source_p, &chptr->reoplist,
-					'R', CAP_IRCNET, ONLY_CHANOPS);
-
-		chptr->ban_serial++;
-	}
+	/* If we're losing TS, remove our bans */
+	if(!keep_our_modes)
+		kill_ban_lists(chptr, source_p, 0);
 
 	if(!joins)
 	{
@@ -1370,7 +1359,7 @@ remove_our_modes(struct Channel *chptr)
  */
 static void
 remove_ban_list(struct Channel *chptr, struct Client *source_p,
-		rb_dlink_list *list, char c, int cap, int mems)
+		rb_dlink_list *list, char c, int cap, int mems, int onlymarked)
 {
 	static char lmodebuf[BUFSIZE];
 	static char lparabuf[BUFSIZE];
@@ -1381,6 +1370,12 @@ remove_ban_list(struct Channel *chptr, struct Client *source_p,
 	int count = 0;
 	int cur_len, mlen, plen;
 
+	if(rb_dlink_list_length(&chptr->banlist) <= 0)
+		return;
+
+	if (c == 'b' || c == 'e')
+		chptr->ban_serial++;
+
 	pbuf = lparabuf;
 
 	cur_len = mlen = rb_sprintf(lmodebuf, ":%s MODE %s -", source_p->name, chptr->chname);
@@ -1389,6 +1384,9 @@ remove_ban_list(struct Channel *chptr, struct Client *source_p,
 	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, list->head)
 	{
 		banptr = ptr->data;
+
+		if (banptr->when && onlymarked)
+			continue;
 
 		/* trailing space, and the mode letter itself */
 		plen = strlen(banptr->banstr) + 2;
@@ -1421,4 +1419,59 @@ remove_ban_list(struct Channel *chptr, struct Client *source_p,
 
 	list->head = list->tail = NULL;
 	list->length = 0;
+}
+
+static void
+mark_ban_list(struct Channel *chptr, rb_dlink_list *list)
+{
+	rb_dlink_node *ptr;
+
+	RB_DLINK_FOREACH(ptr, list->head)
+	{
+		struct Ban *banptr = ptr->data;
+		banptr->when = 0;
+	}
+}
+
+static void
+mark_ban_lists(struct Channel *chptr)
+{
+	mark_ban_list(chptr, &chptr->banlist);
+	mark_ban_list(chptr, &chptr->exceptlist);
+	mark_ban_list(chptr, &chptr->invexlist);
+	mark_ban_list(chptr, &chptr->reoplist);
+}
+
+static void
+kill_ban_lists(struct Channel *chptr, struct Client *source_p, int onlymarked)
+{
+	remove_ban_list(chptr, source_p, &chptr->banlist, 'b', NOCAPS, ALL_MEMBERS, onlymarked);
+	remove_ban_list(chptr, source_p, &chptr->exceptlist, 'e', CAP_EX, ALL_MEMBERS, onlymarked);
+	remove_ban_list(chptr, source_p, &chptr->invexlist, 'I', CAP_IE, ALL_MEMBERS, onlymarked);
+	remove_ban_list(chptr, source_p, &chptr->reoplist, 'R', CAP_IRCNET, ALL_MEMBERS, onlymarked);
+}
+
+static void expire_stale_bans(void *unused)
+{
+	rb_dlink_node *ptr;
+	RB_DLINK_FOREACH(ptr, global_channel_list.head)
+	{
+		struct Channel *chptr = ptr->data;
+		if (!chptr->sidmap)
+			kill_ban_lists(chptr, &me, 1);
+	}
+}
+
+static int
+modinit(void)
+{
+	expire_stale_bans_ev = rb_event_addish("expire_stale_bans", expire_stale_bans, NULL,
+					   120);
+	return 0;
+}
+
+static void
+moddeinit(void)
+{
+	rb_event_delete(expire_stale_bans_ev);
 }

@@ -433,7 +433,12 @@ add_id(struct Client *source_p, struct Channel *chptr, const char *banid,
 		{
 			actualBan = ptr->data;
 			if(!irccmp(actualBan->banstr, realban))
+			{
+				/* The ban marked for deletion was reintroduced */
+				if (!actualBan->when)
+					actualBan->when = rb_current_time();
 				return 0;
+			}
 		}
 	}
 
