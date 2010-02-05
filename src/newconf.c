@@ -1278,6 +1278,7 @@ static void
 conf_set_auth_spoof(confentry_t * entry, conf_t * conf, struct conf_items *item)
 {
 	char *user = NULL, *host = NULL, *p;
+	int i;
 
 	host = LOCAL_COPY(entry->string);
 	user = host;
@@ -1329,6 +1330,21 @@ conf_set_auth_spoof(confentry_t * entry, conf_t * conf, struct conf_items *item)
 	{
 		conf_report_warning_nl("Invalid spoof (invalid hostname): %s::%s at %s:%d", 
 				conf->confname, entry->entryname, entry->filename, entry->line);
+		return;
+	}
+
+	p = ServerInfo.name + strlen(ServerInfo.name);
+	i = 0;
+	while (--p > ServerInfo.name)
+		if ((p[-1] == '.' && (++i) == 2))
+			break;
+	i = strlen(p);
+
+	if ((irccmp(host, "127.0.0.1") && irccmp(host, "0:0:0:0:0:0:0:1") && irccmp(host, "localhost.")) &&
+	    ((strlen(host) < i) || (ircncmp(host + strlen(host) - i, p, i))))
+	{
+		conf_report_warning_nl("Invalid spoof (hostname must be ending with %s suffix, or localhost.): %s::%s at %s:%d", 
+				p, conf->confname, entry->entryname, entry->filename, entry->line);
 		return;
 	}
 
