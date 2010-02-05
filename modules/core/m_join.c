@@ -1067,7 +1067,7 @@ can_join(struct Client *source_p, struct Channel *chptr, char *key)
 
 	s_assert(source_p->localClient != NULL);
 
-	if (IsSCH(chptr) && IsOper(source_p))
+	if (IsSCH(chptr) && (!IsRemoteChannel(name)) && IsOper(source_p))
 		return 0;
 
 	banned = is_banned(chptr, source_p, NULL) == CHFL_BAN;
