@@ -104,8 +104,7 @@ free_channel(struct Channel *chptr)
 struct Ban *
 allocate_ban(const char *banstr, const char *who)
 {
-	char *cwho = NULL;
-//scache_find(who);
+	char *cwho = scache_find(who);
 	struct Ban *bptr;
 	bptr = rb_bh_alloc(ban_heap);
 	bptr->banstr = rb_strndup(banstr, BANLEN);
@@ -674,6 +673,7 @@ struct	Ban *match_ban(rb_dlink_list *bl, struct Client *who, char *nuhs, int ini
 	
 	RB_DLINK_FOREACH(ptr, bl->head) {
 		int i;
+
 		ban = ptr->data;
 		for (i = 0; i < 4; i++)
 			if (match(ban->banstr, &nuhs[i*USERHOST_REPLYLEN]))
@@ -683,6 +683,24 @@ struct	Ban *match_ban(rb_dlink_list *bl, struct Client *who, char *nuhs, int ini
 		if (strchr(ban->banstr, '/') &&
 		    (match_cidr(ban->banstr, nuhs) || match_cidr(ban->banstr, nuhs + USERHOST_REPLYLEN)))
 			return ban;
+
+		if ((!ircncmp(ban->banstr, "user!mode@", 10)) && ((ban->banstr[10] == '+') || (ban->banstr[10] == '-')))
+		{
+			uint32_t goodflags = 0;
+			uint32_t badflags = 0;
+			uint32_t *dirp = &goodflags;
+			char c;
+			for (i = 10; (c = ban->banstr[i]); i++)
+			{
+				if (c == '+')
+					dirp = &goodflags;
+				else if (c == '-')
+					dirp = &badflags;
+				*dirp |= UserModeBitmask(c);
+			}
+			if (((who->umodes & goodflags) == goodflags) && ((who->umodes & badflags) == 0))
+				return ban;
+		}
 	};
 	return NULL;
 }

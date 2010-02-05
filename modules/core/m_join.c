@@ -308,7 +308,7 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 			flags = 0;
 
 		/* In case the channel was just created, reset all modes. */
-		if (chptr && flags)
+		if (chptr && flags && (!IsSCH(chptr)))
 			kill_channel_modes(chptr);
 
 		/* IRCNet splitmode behaviour */
@@ -1066,9 +1066,6 @@ can_join(struct Client *source_p, struct Channel *chptr, char *key)
 	int invite_only;
 
 	s_assert(source_p->localClient != NULL);
-
-	if (IsSCH(chptr) && (!IsRemoteChannel(name)) && IsOper(source_p))
-		return 0;
 
 	banned = is_banned(chptr, source_p, NULL) == CHFL_BAN;
 	over_limit = chptr->mode.limit && rb_dlink_list_length(&chptr->members) >= (unsigned long)chptr->mode.limit;

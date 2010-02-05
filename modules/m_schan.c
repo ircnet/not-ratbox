@@ -111,11 +111,19 @@ hfn_schan_add(hook_data_schan * hdata)
 		return;
 
 	if (!EmptyString(hdata->topic))
-		set_channel_topic(chptr, hdata->topic, "anonymous!anonymous@.", rb_current_time());
+		set_channel_topic(chptr, hdata->topic, "anonymous!anonymous@anonymous.", rb_current_time());
 
 	chptr->mode.mode |= MODE_TOPICLIMIT|MODE_ANONYMOUS|MODE_NOPRIVMSGS|MODE_MODERATED;
 	if (hdata->operonly)
+	{
+		struct Ban *ex;
 		chptr->mode.mode |= MODE_INVITEONLY;
+		if(rb_dlink_list_length(&chptr->invexlist) > 0)
+			return;
+		ex = allocate_ban("user!mode@+o", "anonymous!anonymous@anonymous.");
+		ex->when = rb_current_time();
+		rb_dlinkAdd(ex, &ex->node, &chptr->invexlist);
+	}
 }
 
 static void

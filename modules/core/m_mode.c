@@ -878,7 +878,7 @@ chm_ban(struct Client *source_p, struct Channel *chptr,
 			banptr = ptr->data;
 			sendto_one(source_p, form_str(rpl_list),
 				   me.name, source_p->name, chptr->chname,
-				   banptr->banstr, alevel?banptr->who:"*!*@*", banptr->when);
+				   banptr->banstr, banptr->who, banptr->when?banptr->when:rb_current_time());
 		}
 		sendto_one(source_p, form_str(rpl_endlist), me.name, source_p->name, chptr->chname);
 		return;
